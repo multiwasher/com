@@ -1204,6 +1204,25 @@ function posicaoDe(m){
   return afasta(FABRICA,m.id);
 }
 
+/* Com os pins muito espalhados (ex.: EUA + Europa + Asia) o fitBounds tem de
+   afastar tanto o zoom que a faixa do mundo fica mais baixa do que o cartao.
+   Nesse caso o Leaflet continua a centrar na latitude media dos pins (~40 N),
+   a faixa cai para baixo e sobra um vazio grande em cima. Aqui voltamos a
+   centrar o mundo no contentor; se o mundo for mais alto que o contentor,
+   apenas impedimos que sobrem margens vazias em cima/baixo. */
+function centrarMundo(mapa){
+  const z=mapa.getZoom(), alt=mapa.getSize().y;
+  const mundo=mapa.getPixelWorldBounds();          // limites do mundo em pixeis, neste zoom
+  if(!mundo || !alt) return;
+  const topo=mundo.min.y, base=mundo.max.y, altMundo=base-topo;
+  const c=mapa.project(mapa.getCenter(),z);
+  const y = (altMundo<=alt)
+    ? (topo+base)/2                                          // mundo mais baixo: centra-o
+    : Math.min(Math.max(c.y, topo+alt/2), base-alt/2);        // mundo mais alto: sem margens vazias
+  if(Math.abs(y-c.y)<1) return;                              // ja esta centrado
+  mapa.setView(mapa.unproject([c.x,y],z), z, {animate:false});
+}
+
 function drawMap(id){
   const box=document.getElementById(id);
   if(!box) return;
@@ -1253,7 +1272,7 @@ function drawMap(id){
     b.push(p.pos);
   });
   m0.invalidateSize(false);   // garante que o Leaflet mede o tamanho real do contentor antes de centrar
-  if(b.length) m0.fitBounds(b,{padding:[35,35],maxZoom:9});
+  if(b.length){ m0.fitBounds(b,{padding:[35,35],maxZoom:9}); centrarMundo(m0); }
 }
 
 function urlDeRegisto(){
