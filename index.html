@@ -1117,7 +1117,7 @@ function renderTV(){
       <div class="col-body">${rows}</div>`;
   });
 
-  document.getElementById('tv-feed').innerHTML = logs.slice(0,3).map(l=>`
+  document.getElementById('tv-feed').innerHTML = logs.slice(0,6).map(l=>`
     <div class="f" style="--c:${STATUS[l.status].c}">
       <i></i>
       <span class="nm">${esc(shortName(l.memberName))}</span>
