@@ -1252,6 +1252,7 @@ function drawMap(id){
     markers[id].push(L.marker(p.pos,{icon:pinFor(p.m,1),interactive:!tv}).addTo(m0));
     b.push(p.pos);
   });
+  m0.invalidateSize(false);   // garante que o Leaflet mede o tamanho real do contentor antes de centrar
   if(b.length) m0.fitBounds(b,{padding:[35,35],maxZoom:9});
 }
 
