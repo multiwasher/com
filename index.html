@@ -137,7 +137,11 @@ html.tv body{
 /* ── Coluna com muitos cards: passa a 2 colunas (evita overflow) ──
    A coluna tambem duplica de largura na grelha (.tvgrid.f2), para os
    cards nao ficarem estreitos; as restantes cedem um pouco de espaco. */
-.tvgrid.f2{grid-template-columns:1.6fr .8fr .8fr .8fr .8fr 1.5fr}
+.tvgrid.f2-0{grid-template-columns:1.6fr .8fr .8fr .8fr .8fr 1.5fr}  /* fabrica */
+.tvgrid.f2-1{grid-template-columns:.8fr 1.6fr .8fr .8fr .8fr 1.5fr}  /* home */
+.tvgrid.f2-2{grid-template-columns:.8fr .8fr 1.6fr .8fr .8fr 1.5fr}  /* viagem */
+.tvgrid.f2-3{grid-template-columns:.8fr .8fr .8fr 1.6fr .8fr 1.5fr}  /* ferias */
+.tvgrid.f2-multi{grid-template-columns:1.2fr 1.2fr 1.2fr 1.2fr .8fr 1.5fr}  /* multiplas duplas */
 .col-body.duas{display:grid;grid-template-columns:1fr 1fr;align-content:start;gap:.6rem}
 .col-body.duas .p{padding:clamp(.55rem,9cqh,1.2rem) clamp(.5rem,8.5cqh,1.2rem) clamp(.45rem,7cqh,1rem);min-height:clamp(10rem,22cqh,14rem);border-radius:1.15rem;gap:clamp(.3rem,5.5cqh,.8rem)}
 .col-body.duas .p .ptop{gap:clamp(.35rem,6cqh,.8rem)}
@@ -1026,7 +1030,7 @@ const STATUS = {
 const ORDER = ['fabrica','home','viagem','ferias','visitas'];   // ordem em que as colunas aparecem
 /* Colunas que passam a 2 colunas quando tem muitos cards (evita overflow).
    Acrescente 'home' a lista se quiser o mesmo no Home office. */
-const DUAS_COLUNAS = ['fabrica'];
+const DUAS_COLUNAS = ['fabrica','home','viagem','ferias'];
 const MAX_1_COLUNA = 5;            // > 5 cards -> duas colunas
 
 /* ── Equipa: só nome e foto. Estado, dias e posição vêm todos da folha. ── */
@@ -1090,7 +1094,7 @@ function avatarHtml(m,cls='av'){
 
 /* ═══ TV ═══ */
 function renderTV(){
-  let fabricaDupla = false;
+  let colunaDupla = {};
   ORDER.forEach(k=>{
     const st=STATUS[k], list=members.filter(m=>m.status===k ||
       (k==='visitas' && m.planoVisita));
@@ -1131,7 +1135,7 @@ function renderTV(){
     }).join('') : `<div class="col-empty">Sem registos</div>`;
 
     const duas = DUAS_COLUNAS.includes(k) && list.length > MAX_1_COLUNA;
-    if(k==='fabrica') fabricaDupla = duas;
+    colunaDupla[k] = duas;
     document.getElementById('col-'+k).style.setProperty('--c',st.c);
     document.getElementById('col-'+k).innerHTML = `
       <div class="col-head">
@@ -1141,8 +1145,18 @@ function renderTV(){
       <div class="col-body${duas?' duas':''}">${rows}</div>`;
   });
 
-  // a grelha alarga a coluna dupla para os cards manterem a largura util
-  document.querySelector('.tvgrid')?.classList.toggle('f2', fabricaDupla);
+  // aplica classe de grelha conforme quantas colunas estao duplas
+  const duplas = Object.entries(colunaDupla).filter(([k,v])=>v).map(([k])=>k);
+  const tvgrid = document.querySelector('.tvgrid');
+  if(tvgrid){
+    tvgrid.classList.remove('f2-0','f2-1','f2-2','f2-3','f2-multi');
+    if(duplas.length===1){
+      const idx = ORDER.indexOf(duplas[0]);
+      if(idx>=0) tvgrid.classList.add('f2-'+idx);
+    } else if(duplas.length>1){
+      tvgrid.classList.add('f2-multi');
+    }
+  }
 
   document.getElementById('tv-feed').innerHTML = logs.slice(0,6).map(l=>`
     <div class="f" style="--c:${STATUS[l.status].c}">
