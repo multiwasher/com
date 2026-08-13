@@ -135,8 +135,8 @@ html.tv body{
 .col-empty{margin:auto;padding:2rem;text-align:center;font-size:1.3rem;color:var(--text-3)}
 
 .rail{display:flex;flex-direction:column;gap:1.2rem;min-height:0}
-.tile{background:var(--surface);border-radius:1.6rem;overflow:hidden;display:flex;flex-direction:column;min-height:0;box-shadow:var(--shadow)}
-#tvmap{flex:1;min-height:0;background:var(--map-bg)}
+.tile{background:var(--surface);border-radius:1.6rem;overflow:hidden;display:flex;flex-direction:column;min-height:0;box-shadow:var(--shadow);position:relative}
+#tvmap{position:absolute;inset:0;background:var(--map-bg)}
 .leaflet-container{background:var(--map-bg);font-family:inherit}
 /* tiles: usamos mapas já escuros/claros em vez de filtros CSS (Tizen não os aplica).
    NÃO redimensionar os tiles — o WebKit antigo das TVs suaviza as margens da
@@ -593,7 +593,6 @@ input[type=text]::placeholder{color:var(--text-3)}
   border:1px solid var(--g-brd);color:var(--text-2);padding:.4rem .9rem;border-radius:99rem;
   pointer-events:none;
 }
-.tile:has(#tvmap){position:relative}
 
 #map-scrim{
   position:fixed;inset:0;z-index:210;display:none;align-items:center;justify-content:center;
