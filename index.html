@@ -134,6 +134,21 @@ html.tv body{
 .p .days{font-size:clamp(.62rem,7.5cqh,1.2rem);color:var(--text-3);font-variant-numeric:tabular-nums;flex:none}
 .col-empty{margin:auto;padding:2rem;text-align:center;font-size:1.3rem;color:var(--text-3)}
 
+/* ── Coluna com muitos cards: passa a 2 colunas (evita overflow) ──
+   A coluna tambem duplica de largura na grelha (.tvgrid.f2), para os
+   cards nao ficarem estreitos; as restantes cedem um pouco de espaco. */
+.tvgrid.f2{grid-template-columns:1.6fr .8fr .8fr .8fr .8fr 1.5fr}
+.col-body.duas{display:grid;grid-template-columns:1fr 1fr;align-content:start;gap:.6rem}
+.col-body.duas .p{padding:clamp(.55rem,9cqh,1.2rem) clamp(.5rem,8.5cqh,1.2rem) clamp(.45rem,7cqh,1rem);min-height:clamp(10rem,22cqh,14rem);border-radius:1.15rem;gap:clamp(.3rem,5.5cqh,.8rem)}
+.col-body.duas .p .ptop{gap:clamp(.35rem,6cqh,.8rem)}
+.col-body.duas .p .av{width:clamp(2.2rem,36cqh,5.6rem);height:clamp(2.2rem,36cqh,5.6rem);box-shadow:0 0 0 .22rem var(--c)}
+.col-body.duas .p .av .ini{font-size:clamp(.72rem,13cqh,1.8rem)}
+.col-body.duas .p .nm{font-size:clamp(.85rem,12cqh,1.7rem)}
+.col-body.duas .p .tm{font-size:clamp(.7rem,9cqh,1.25rem)}
+.col-body.duas .p .pfoot{margin-top:auto;display:flex;align-items:center;gap:.75rem}
+.col-body.duas .p .meter{height:clamp(.25rem,5.5cqh,.8rem)}
+.col-body.duas .p .days{font-size:clamp(.65rem,8cqh,1.1rem)}
+
 .rail{display:flex;flex-direction:column;gap:1.2rem;min-height:0}
 .tile{background:var(--surface);border-radius:1.6rem;overflow:hidden;display:flex;flex-direction:column;min-height:0;box-shadow:var(--shadow);position:relative}
 #tvmap{position:absolute;inset:0;background:var(--map-bg)}
@@ -298,9 +313,11 @@ html.phone body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
   .tile:first-child{min-height:26rem}
   .col-body{overflow:visible}
   .p{height:auto;flex:0 0 auto;min-height:0}
+  .tvgrid.f2{grid-template-columns:repeat(2,1fr)}   /* estreito: sem coluna dupla */
 }
 @media (max-width:620px){
-  .tvgrid{grid-template-columns:1fr}
+  .tvgrid,.tvgrid.f2{grid-template-columns:1fr}
+  .col-body.duas{grid-template-columns:1fr}
 }
 
 /* ── Telemóvel: recortes de ecrã e ecrãs pequenos ─────── */
@@ -1007,6 +1024,10 @@ const STATUS = {
   ferias: {label:'De férias',  short:'De férias',  sub:'Ausente',              icon:'i-sun',     c:'var(--purple)'}
 };
 const ORDER = ['fabrica','home','viagem','ferias','visitas'];   // ordem em que as colunas aparecem
+/* Colunas que passam a 2 colunas quando tem muitos cards (evita overflow).
+   Acrescente 'home' a lista se quiser o mesmo no Home office. */
+const DUAS_COLUNAS = ['fabrica'];
+const MAX_1_COLUNA = 5;            // > 5 cards -> duas colunas
 
 /* ── Equipa: só nome e foto. Estado, dias e posição vêm todos da folha. ── */
 const EQUIPA = [
@@ -1069,6 +1090,7 @@ function avatarHtml(m,cls='av'){
 
 /* ═══ TV ═══ */
 function renderTV(){
+  let fabricaDupla = false;
   ORDER.forEach(k=>{
     const st=STATUS[k], list=members.filter(m=>m.status===k ||
       (k==='visitas' && m.planoVisita));
@@ -1108,14 +1130,19 @@ function renderTV(){
       </div>`;
     }).join('') : `<div class="col-empty">Sem registos</div>`;
 
+    const duas = DUAS_COLUNAS.includes(k) && list.length > MAX_1_COLUNA;
+    if(k==='fabrica') fabricaDupla = duas;
     document.getElementById('col-'+k).style.setProperty('--c',st.c);
     document.getElementById('col-'+k).innerHTML = `
       <div class="col-head">
         <div class="badge"><svg class="ico" style="font-size:1.5rem"><use href="#${st.icon}"/></svg></div>
         <h2>${k==='visitas'?'Visitas inversas':st.label}</h2><span class="n">${list.length}</span>
       </div>
-      <div class="col-body">${rows}</div>`;
+      <div class="col-body${duas?' duas':''}">${rows}</div>`;
   });
+
+  // a grelha alarga a coluna dupla para os cards manterem a largura util
+  document.querySelector('.tvgrid')?.classList.toggle('f2', fabricaDupla);
 
   document.getElementById('tv-feed').innerHTML = logs.slice(0,6).map(l=>`
     <div class="f" style="--c:${STATUS[l.status].c}">
@@ -1134,6 +1161,9 @@ function pinFor(m,count){
     iconSize:[40,40], iconAnchor:[20,20]});
 }
 const FABRICA = [40.5751,-8.4442];   // Somengil, Aveiro
+/* Enquadramento de recurso: sem ninguem em viagem nao ha pins, e o mapa
+   nao deve ficar preso a ultima vista (que podia ter meio mundo). */
+const VISTA_PT = [[36.90,-9.60],[42.20,-6.10]];   // Portugal continental
 
 /* ── Tiles ────────────────────────────────────────────────────────────
    Em vez de escurecer o OpenStreetMap com filter:invert() — que os
@@ -1272,7 +1302,9 @@ function drawMap(id){
     b.push(p.pos);
   });
   m0.invalidateSize(false);   // garante que o Leaflet mede o tamanho real do contentor antes de centrar
-  if(b.length){ m0.fitBounds(b,{padding:[35,35],maxZoom:9}); centrarMundo(m0); }
+  if(b.length) m0.fitBounds(b,{padding:[35,35],maxZoom:9});
+  else         m0.fitBounds(VISTA_PT,{padding:[25,25],maxZoom:8});   // ninguem em viagem: volta a Portugal
+  centrarMundo(m0);
 }
 
 function urlDeRegisto(){
