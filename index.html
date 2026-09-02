@@ -2758,26 +2758,48 @@ function buildInsights(mes){
     linha(m.id).visitas.add(dia);
   });
 
-  // agrupa dias "viagem" consecutivos no mesmo país numa só viagem (ida+volta)
-  const porPessoa=new Map();
+  const planeado = mapaPlaneado(mes);
+
+  /* Dias em viagem: contam os dias do "Planeamento de vários dias" — uma viagem
+     de 02/09 a 03/09 são 2 dias, tenha ou não havido check-in em cada um. Junta
+     os check-ins "Em viagem" sem plano, que também são dias fora. O dia de
+     viagem manda sobre outro estado registado nesse dia (a divergência continua
+     a ser reportada na conformidade). */
+  planeado.forEach((mp,id)=>{
+    const l=linha(id);
+    mp.forEach((k,dia)=>{
+      if(k!=='viagem') return;
+      l.viagem.add(dia);
+      l.fabrica.delete(dia); l.home.delete(dia); l.ferias.delete(dia);
+    });
+  });
+
+  // país de cada dia de viagem: o planeamento manda, o check-in serve de reserva
+  const paisDia=new Map();
+  (planos||[]).forEach(r=>{
+    if(!ehViagem(r) || !r.pais) return;
+    const m=acharMembro(r.memberName); if(!m) return;
+    const dia=diaISO(r.dia); if(!dia || (mes && !dia.startsWith(mes))) return;
+    paisDia.set(m.id+'|'+dia, r.pais);
+  });
   porDia.forEach(r=>{
     if(r.status!=='viagem') return;
-    if(!porPessoa.has(r.id)) porPessoa.set(r.id,[]);
-    porPessoa.get(r.id).push({dia:r.dia, pais:paisDeObs(r.obs)});
+    const p=paisDeObs(r.obs), chave=r.id+'|'+r.dia;
+    if(p && !paisDia.has(chave)) paisDia.set(chave,p);
   });
-  porPessoa.forEach((dias,id)=>{
-    dias.sort((a,b)=>a.dia.localeCompare(b.dia));
-    const l=linha(id);
+
+  // agrupa dias de viagem consecutivos no mesmo país numa só viagem (ida+volta)
+  linhas.forEach((l,id)=>{
     let bloco=null;
-    dias.forEach(d=>{
-      if(bloco && bloco.pais===d.pais && seguinte(bloco.fim)===d.dia) bloco.fim=d.dia;
-      else{ if(bloco) somarViagem(l,bloco); bloco={pais:d.pais,ini:d.dia,fim:d.dia}; }
+    [...l.viagem].sort().forEach(dia=>{
+      const pais=paisDia.get(id+'|'+dia)||null;
+      if(bloco && bloco.pais===pais && seguinte(bloco.fim)===dia) bloco.fim=dia;
+      else{ if(bloco) somarViagem(l,bloco); bloco={pais,ini:dia,fim:dia}; }
     });
     if(bloco) somarViagem(l,bloco);
   });
 
   // ── planeamento vs registo diário, dia a dia (só dias já passados) ──
-  const planeado = mapaPlaneado(mes);
   const real = new Map();          // id -> Map(dia -> status registado)
   porDia.forEach(r=>{
     if(!real.has(r.id)) real.set(r.id,new Map());
@@ -3196,15 +3218,12 @@ function exportPersonPdf(){
   const hoje=isoHoje(), L=640;
 
   /* pares lado a lado: a folha cabe numa página nos casos correntes */
-  const media = d.viagens ? (d.viagem.size/d.viagens).toLocaleString('pt-PT',{maximumFractionDigits:1}) : null;
   const pares=[
     ['Dias em viagem',d.viagem.size,                'Nº de viagens',d.viagens],
-    ['Duração média por viagem',media===null?'—':`${media} ${media==='1'?'dia':'dias'}`,
-                                                    'Países visitados',d.paises.size],
-    ['Dias na fábrica',d.fabrica.size,              'Km percorridos (ida e volta)',Math.round(d.km).toLocaleString('pt-PT')],
-    ['Dias em home office',d.home.size,             'Taxa de esforço',taxa===null?'—':taxa+'%'],
-    ['Dias de férias',d.ferias.size,                'Dias úteis registados',uteis],
-    ['Visitas recebidas (dias)',d.visitas.size,     '','']
+    ['Dias na fábrica',d.fabrica.size,              'Países visitados',d.paises.size],
+    ['Dias em home office',d.home.size,             'Km percorridos (ida e volta)',Math.round(d.km).toLocaleString('pt-PT')],
+    ['Dias de férias',d.ferias.size,                'Taxa de esforço',taxa===null?'—':taxa+'%'],
+    ['Visitas recebidas (dias)',d.visitas.size,     'Dias úteis registados',uteis]
   ];
   document.getElementById('print-root').innerHTML = `
     <div class="pr-top">
@@ -3267,7 +3286,8 @@ function exportPersonPdf(){
     ${paises.length?`<div class="pr-sec"><h3>Países visitados</h3>
       <div class="pr-paises">${paises.map(p=>`<span>${bandeiraPais(p)} ${esc(p)}</span>`).join('')}</div></div>`:''}
 
-    <div class="pr-fim">Só há falha quando o mesmo dia tem planeamento e registo diferentes.
+    <div class="pr-fim">Dias em viagem: dias do "Planeamento de vários dias", mais os check-ins "Em viagem" sem plano.
+      Só há falha quando o mesmo dia tem planeamento e registo diferentes.
       Km's percorridos: estimativa em linha reta (ida e volta) entre Aveiro e o país de destino de cada viagem.
       Documento interno Somengil.</div>`;
 
@@ -3340,19 +3360,17 @@ function exportInsightsExcel(){
   const hoje=isoHoje();
 
   const cab=['Comercial','Taxa de esforço (%)','Dias úteis registados','Na fábrica (dias)','Home office (dias)',
-             'Dias em viagem','Férias (dias)','Visitas recebidas (dias)','Nº de viagens','Duração média por viagem (dias)','Países visitados',
+             'Dias em viagem','Férias (dias)','Visitas recebidas (dias)','Nº de viagens','Países visitados',
              'Km percorridos (ida e volta)','Conformes','Falhas (divergências)','Só com registo','Só com plano','Conformidade (%)'];
   const linhas=fila.map(({m,d,taxa,uteis})=>{
     const comparaveis=d.conforme.length+d.divergente.length;
     return [m.name, taxa===null?'':taxa, uteis, d.fabrica.size, d.home.size, d.viagem.size, d.ferias.size,
-            d.visitas.size, d.viagens, d.viagens?Math.round(d.viagem.size/d.viagens*10)/10:'',
-            d.paises.size, Math.round(d.km),
+            d.visitas.size, d.viagens, d.paises.size, Math.round(d.km),
             d.conforme.length, d.divergente.length, d.soRegisto.length, d.soPlano.length,
             comparaveis?Math.round(d.conforme.length/comparaveis*100):''];
   });
   const totais=['Equipa · total', tot.pesoDias?Math.round(tot.pesoSoma/tot.pesoDias):'', '',
-                tot.fabrica, tot.home, tot.viagem, tot.ferias, tot.visitas, tot.viagens,
-                tot.viagens?Math.round(tot.viagem/tot.viagens*10)/10:'', '',
+                tot.fabrica, tot.home, tot.viagem, tot.ferias, tot.visitas, tot.viagens, '',
                 Math.round(tot.km), tot.conforme, tot.divergente, tot.soRegisto, tot.soPlano, ''];
 
   // segundo quadro: as falhas (planeado e registado diferentes no mesmo dia)
