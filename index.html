@@ -2822,8 +2822,6 @@ function buildInsights(mes){
     const chave=m.id+'|'+dia, atual=porDia.get(chave);
     if(!atual || row.time>atual.time) porDia.set(chave,{id:m.id,dia,status:row.status,obs:row.obs,time:row.time});
   });
-  porDia.forEach(r=>{ const l=linha(r.id); if(l[r.status]) l[r.status].add(r.dia); });
-
   (visitas||[]).forEach(r=>{
     const m=acharMembro(r.memberName); if(!m) return;
     const dia=diaISO(r.dia); if(!dia) return;
@@ -2831,20 +2829,24 @@ function buildInsights(mes){
     linha(m.id).visitas.add(dia);
   });
 
+  /* ── O estado de cada dia ──────────────────────────────────────────
+     Mesma regra do quadro: o "Planeamento de vários dias" define o dia,
+     o "Local de trabalho" corrige. Uma viagem de 02/09 a 03/09 são 2 dias,
+     tenha ou não havido check-in em cada um; um check-in nesse dia
+     substitui o planeado, porque é a correcção de quem lá esteve. Um dia
+     só com check-in conta na mesma. A discordância entre os dois continua
+     a ser reportada na conformidade. */
   const planeado = mapaPlaneado(mes);
-
-  /* Dias em viagem: contam os dias do "Planeamento de vários dias" — uma viagem
-     de 02/09 a 03/09 são 2 dias, tenha ou não havido check-in em cada um. Junta
-     os check-ins "Em viagem" sem plano, que também são dias fora. O dia de
-     viagem manda sobre outro estado registado nesse dia (a divergência continua
-     a ser reportada na conformidade). */
-  planeado.forEach((mp,id)=>{
-    const l=linha(id);
-    mp.forEach((k,dia)=>{
-      if(k!=='viagem') return;
-      l.viagem.add(dia);
-      l.fabrica.delete(dia); l.home.delete(dia); l.ferias.delete(dia);
-    });
+  const estadoDia = new Map();                        // `id|dia` -> estado
+  planeado.forEach((mp,id)=>mp.forEach((k,dia)=>{
+    if(k==='visitas') return;                         // receber alguém não é um local de trabalho
+    estadoDia.set(id+'|'+dia,k);
+  }));
+  porDia.forEach(r=>estadoDia.set(r.id+'|'+r.dia, r.status));
+  estadoDia.forEach((k,chave)=>{
+    const corte=chave.indexOf('|');
+    const l=linha(+chave.slice(0,corte));
+    if(l[k]) l[k].add(chave.slice(corte+1));
   });
 
   // país de cada dia de viagem: o planeamento manda, o check-in serve de reserva
