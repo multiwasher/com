@@ -2034,9 +2034,24 @@ function aplicarDados(onb, plan, vis){
   nomesOrfaos.clear();                 // recontado a cada sincronização
   const acha = nome=>acharMembro(nome,true);
 
-  // ── onboarding: "Local de trabalho" é a ÚNICA coisa que decide o status
-  // (a coluna onde o card aparece). Fábrica, home, viagem e férias entram
-  // todos por aqui, um check-in por dia.
+  const hoje = isoHoje(), mes = hoje.slice(0,7);
+
+  /* ── Quem aparece em cada coluna hoje ─────────────────────────────
+     O "Planeamento de vários dias" decide: procura-se a linha cujo dia
+     é o de hoje e lê-se o local. O "Local de trabalho" ficou como
+     correção — um check-in feito HOJE sobrepõe-se ao planeado (um de
+     ontem já não conta, senão arrastava o estado para o dia seguinte).
+     Quem não tem plano para hoje nem check-in de hoje não aparece. */
+  const planoHoje = new Map();      // id -> {k, row}
+  plan.forEach(row=>{
+    const m = acha(row.memberName); if(!m) return;
+    if(diaISO(row.dia)!==hoje) return;
+    const k = chaveLocal(row.statusLabel);
+    if(k!=='fabrica' && k!=='home' && k!=='viagem' && k!=='ferias') return;
+    planoHoje.set(m.id,{k,row});
+  });
+
+  const correcaoHoje = new Map();   // id -> {k, row, t} — o check-in mais recente de hoje
   const balde = new Map();
   const saco = id=>{
     if(!balde.has(id)) balde.set(id,{fabrica:new Set(),home:new Set(),viagem:new Set(),ferias:new Set()});
@@ -2048,18 +2063,16 @@ function aplicarDados(onb, plan, vis){
     if(k!=='fabrica' && k!=='home' && k!=='viagem' && k!=='ferias') return;   // visitas inversas vêm só do planeamento
     const t = normTime(row.time);
     saco(m.id)[k].add(t.split(' ')[0]);
-    m.status = k;
     m.lastUpdate = t;
-    m.obs = row.obs || STATUS[k].label;
-    const sub = (row.subName && row.subName!=='-') ? acha(row.subName) : null;
-    m.subId = sub ? sub.id : null;
     const la=parseFloat(row.lat), ln=parseFloat(row.lng);
     if(!isNaN(la)&&!isNaN(ln)){ m.lat=la; m.lng=ln; }
+    if(t.startsWith(hoje)){
+      const atual = correcaoHoje.get(m.id);
+      if(!atual || t>atual.t) correcaoHoje.set(m.id,{k,row,t});
+    }
   });
 
-  // ── planeamento: só informação (visível no calendário pessoal, ao
-  // clicar no card) — nunca decide a coluna onde alguém aparece. ──
-  const hoje = isoHoje(), mes = hoje.slice(0,7);
+  // ── planeamento do mês: alimenta o calendário pessoal e as datas do card ──
   const viagemMes = new Map();     // id -> {dias:Set, linhas:[]}
   const fabricaMes = new Map();
   const homeMes = new Map();
@@ -2095,6 +2108,21 @@ function aplicarDados(onb, plan, vis){
   };
 
   members.forEach(m=>{
+    // o plano de hoje decide; o check-in de hoje corrige
+    const corr = correcaoHoje.get(m.id), prev = planoHoje.get(m.id);
+    const fonte = corr || prev || null;
+    m.status = fonte ? fonte.k : null;
+    m.corrigido = !!(corr && prev && corr.k!==prev.k);
+    if(fonte){
+      const row = fonte.row;
+      m.obs = corr ? (row.obs || STATUS[fonte.k].label)
+                   : ([row.cliente,row.pais].filter(Boolean).join(' · ') || row.obs || STATUS[fonte.k].label);
+      const sub = (row.subName && row.subName!=='-') ? acha(row.subName) : null;
+      m.subId = sub ? sub.id : null;
+    }else{
+      m.obs=''; m.subId=null;
+    }
+
     const b = balde.get(m.id);
     m.metrics = {
       fabrica: b?b.fabrica.size:0,
@@ -2115,10 +2143,9 @@ function aplicarDados(onb, plan, vis){
     m.planoFerias  = fe ? resumoPlano(fe,'ferias')  : null;
     m.planoVisita  = vi ? resumoPlano(vi,'visitas') : null;
 
-    // só enriquece o card (bandeira/relógio/datas) quando o check-in de
-    // hoje já é do mesmo tipo do plano E o plano cobre o dia de hoje —
-    // nunca é isto que decide o status. Sem plano, um check-in "Em viagem"
-    // ainda mostra bandeira/relógio a partir do país escolhido no registo.
+    // datas, bandeira e relógio do card: só quando o plano do mês cobre hoje
+    // e é do mesmo tipo do estado em vigor. Se um check-in corrigiu o dia para
+    // outro local, o plano deixa de encaixar e fica só o país do registo.
     const planoDeHoje = m.status==='fabrica' ? m.planoFabrica
                        : m.status==='home'   ? m.planoHome
                        : m.status==='viagem' ? m.planoViagem
