@@ -238,6 +238,21 @@ textarea::placeholder{color:var(--text-3)}
 .opt .mark{margin-left:auto;color:var(--blue);font-size:17px;opacity:0;transform:scale(.6);transition:all .22s var(--ease)}
 .opt[aria-pressed="true"] .mark{opacity:1;transform:none}
 
+.pl-logo-prev{
+  flex:none;width:34px;height:34px;border-radius:8px;background:#fff;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;margin-left:auto;
+}
+.pl-logo-prev img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+#pl-logo{margin-left:10px;max-width:52%}
+
+/* logótipo do cliente que vem visitar, no cartão da coluna Visitas */
+.p .cliente-logo{
+  flex:none;height:clamp(1.6rem,26cqh,3.4rem);max-width:clamp(4rem,30cqw,9rem);
+  border-radius:.5rem;background:#fff;padding:.25rem .4rem;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.p .cliente-logo img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+
 .inst-bar{
   display:flex;align-items:center;gap:11px;margin-top:14px;padding:11px 13px;border-radius:14px;
   background:var(--g-soft);-webkit-backdrop-filter:blur(20px) saturate(170%);backdrop-filter:blur(20px) saturate(170%);
@@ -606,12 +621,12 @@ html.tv #plan-sheet{zoom:clamp(1,.115vh,2.2)}
 #plan-head .x{margin-left:auto;width:32px;height:32px;border-radius:50%;background:var(--fill);color:var(--text-2);display:flex;align-items:center;justify-content:center;font-size:15px}
 #plan-body{padding:0 20px}
 
-input[type=text],input[type=password]{
+input[type=text],input[type=password],input[type=url]{
   margin-left:auto;max-width:64%;background:none;border:none;font:inherit;font-size:17px;
   color:var(--text);text-align:right;padding:4px 0;min-width:0;
 }
-input[type=text]:focus,input[type=password]:focus{outline:none}
-input[type=text]::placeholder,input[type=password]::placeholder{color:var(--text-3)}
+input[type=text]:focus,input[type=password]:focus,input[type=url]:focus{outline:none}
+input[type=text]::placeholder,input[type=password]::placeholder,input[type=url]::placeholder{color:var(--text-3)}
 
 .cal{padding:4px 0 10px}
 .cal-head{display:flex;align-items:center;gap:8px;padding:10px 12px}
@@ -1250,6 +1265,11 @@ table.pr-tab th:first-child,table.pr-tab td:first-child{text-align:left}
           <label for="pl-country">País</label>
           <select id="pl-country"><option value="" disabled selected>Escolher</option></select>
         </div>
+        <div class="frow" id="pl-logo-row" style="border-top:.5px solid var(--sep)" hidden>
+          <label for="pl-logo">Logótipo</label>
+          <span class="pl-logo-prev" id="pl-logo-prev" hidden></span>
+          <input type="url" id="pl-logo" placeholder="https://… (opcional)" autocomplete="off" oninput="preverLogo()">
+        </div>
       </div>
       </div>
 
@@ -1464,6 +1484,7 @@ function renderTV(){
       const second = sub ? `<b>Substituído por ${esc(shortName(sub.name))}</b>` : esc(card.obs||st.sub);
       const diasViagem = (card.metrics&&card.metrics.viagem)||0;   // o contador é sempre dias Em viagem
       const temClock = k==='viagem' && card.plano?.pais;
+      const logoVisita = k==='visitas' ? urlLogo(m.planoVisita?.linha?.logo) : '';
       const semSb = k==='fabrica' || k==='home';
       return `<div class="p${temClock?' p-clock':''}" style="--c:${st.c}" onclick="openPersonCal(${card.id})">
         <div class="ptop">
@@ -1473,6 +1494,7 @@ function renderTV(){
             <div class="tm-row">
               <div class="tm">${marcaTempo(card)}</div>
               ${temClock ? horaViagem(card.plano.pais) : ''}
+              ${logoVisita ? `<span class="cliente-logo"><img src="${esc(logoVisita)}" alt="" loading="lazy" onerror="this.parentNode.remove()"></span>` : ''}
             </div>
           </div>
         </div>
@@ -2227,6 +2249,7 @@ function openPlanModal(tipo){
   const cfg = MODOS[planTipo];
   document.getElementById('plan-title').textContent = cfg.titulo;
   document.getElementById('plan-destino').hidden = !cfg.destino;
+  document.getElementById('pl-logo-row').hidden = planTipo!=='visitas';   // só a visita traz logótipo
   document.getElementById('pl-sub-block').hidden = !cfg.sub;
   document.getElementById('plan-dias-lbl').textContent = cfg.dias;
   if(cfg.destino){
@@ -2238,6 +2261,23 @@ function openPlanModal(tipo){
   abrirPlan();
 }
 
+/** Só aceita https: um endereço mal formado (ou javascript:) nunca chega ao
+    ecrã, e em http o browser bloquearia a imagem numa página segura. */
+const urlLogo = u=>{
+  const t=String(u||'').trim();
+  return /^https:\/\/[^\s"'<>]+$/i.test(t) ? t : '';
+};
+
+/** Mostra o logótipo enquanto se escreve: um endereço partido é invisível de outra forma. */
+function preverLogo(){
+  const prev=document.getElementById('pl-logo-prev');
+  const u=urlLogo(document.getElementById('pl-logo').value);
+  if(!u){ prev.hidden=true; prev.innerHTML=''; return; }
+  // só se mostra quando a imagem carrega mesmo: ver o logótipo é a prova de que o endereço serve
+  prev.innerHTML=`<img src="${esc(u)}" alt="" onload="this.parentNode.hidden=false" onerror="this.parentNode.hidden=true">`;
+  prev.hidden=true;
+}
+
 function abrirPlan(){
   document.getElementById('pl-member').innerHTML='<option value="" disabled selected>Escolher</option>'+
     members.map(m=>`<option value="${m.id}">${esc(shortName(m.name))}</option>`).join('');
@@ -2246,6 +2286,7 @@ function abrirPlan(){
   selPais.innerHTML='<option value="" disabled selected>Escolher</option>'+
     PAISES_LISTA.map(p=>`<option value="${p}">${p}</option>`).join('');
   document.getElementById('pl-note').value='';
+  document.getElementById('pl-logo').value=''; preverLogo();
   planFillSubs(); planSel.clear(); planRef=new Date(); renderCal(); planAlerta('');
   document.getElementById('plan-scrim').classList.add('on');
 }
@@ -2256,6 +2297,8 @@ async function submitPlan(){
   const cliente=document.getElementById('pl-client').value.trim();
   const pais=document.getElementById('pl-country').value.trim();
   const nota=document.getElementById('pl-note').value.trim();
+  const logoBruto=document.getElementById('pl-logo').value.trim();
+  const logo=urlLogo(logoBruto);
 
   const cfg = MODOS[planTipo];
   const subId=(cfg.sub && document.getElementById('pl-sub').value)?parseInt(document.getElementById('pl-sub').value):null;
@@ -2265,6 +2308,8 @@ async function submitPlan(){
   if(planTipo==='visitas' && !cliente) return planAlerta('Indique a visita.');
   if(cfg.destino && !pais)         return planAlerta('Indique o país.');
   if(cfg.sub && !subMember)        return planAlerta('Indique quem assume as suas funções.');
+  if(planTipo==='visitas' && logoBruto && !logo)
+    return planAlerta('O logótipo tem de ser um endereço https:// de uma imagem.');
   if(!planSel.size)                return planAlerta('Selecione pelo menos um dia no calendário.');
 
   const m=members.find(x=>x.id===id);
@@ -2279,7 +2324,7 @@ async function submitPlan(){
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
       body: JSON.stringify(
         planTipo==='visitas'
-          ? { tipo:'visits', time:agoraISO(), memberName:m.name, pais, visita:cliente, dias }
+          ? { tipo:'visits', time:agoraISO(), memberName:m.name, pais, visita:cliente, logo, dias }
           : { tipo:'planning', time:agoraISO(), memberName:m.name,
               statusLabel: STATUS[planTipo].label,
               pais: cfg.destino?pais:'', cliente: cfg.destino?cliente:'',
