@@ -238,6 +238,25 @@ textarea::placeholder{color:var(--text-3)}
 .opt .mark{margin-left:auto;color:var(--blue);font-size:17px;opacity:0;transform:scale(.6);transition:all .22s var(--ease)}
 .opt[aria-pressed="true"] .mark{opacity:1;transform:none}
 
+.inst-bar{
+  display:flex;align-items:center;gap:11px;margin-top:14px;padding:11px 13px;border-radius:14px;
+  background:var(--g-soft);-webkit-backdrop-filter:blur(20px) saturate(170%);backdrop-filter:blur(20px) saturate(170%);
+  border:1px solid var(--g-brd);box-shadow:var(--shadow);
+}
+.inst-bar .sq{width:34px;height:34px;border-radius:10px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;flex:none}
+.inst-bar .m{flex:1;min-width:0;line-height:1.25}
+.inst-bar .m b{display:block;font-size:15px;font-weight:600;letter-spacing:-.015em}
+.inst-bar .m span{font-size:12.5px;color:var(--text-2)}
+.inst-btn{
+  flex:none;background:var(--blue);color:#fff;font-size:14px;font-weight:600;
+  padding:9px 15px;border-radius:11px;transition:transform .18s var(--ease),opacity .18s;
+}
+.inst-btn:active{transform:scale(.96);opacity:.9}
+.inst-btn[hidden]{display:none}
+.inst-x{flex:none;width:28px;height:28px;border-radius:50%;background:var(--fill);color:var(--text-2);display:flex;align-items:center;justify-content:center;font-size:13px}
+.inst-x:active{background:var(--fill-2)}
+@media (max-width:380px){ .inst-bar .m span{display:none} }
+
 .alert{display:none;gap:9px;align-items:center;margin-top:16px;background:color-mix(in srgb,var(--red) 14%,transparent);color:var(--red);border-radius:12px;padding:13px 15px;font-size:15px;font-weight:500}
 .alert.on{display:flex}
 .cta{width:100%;margin-top:26px;background:var(--blue);color:#fff;font-size:17px;font-weight:600;padding:16px;border-radius:14px;transition:transform .18s var(--ease),opacity .18s}
@@ -1009,6 +1028,18 @@ table.pr-tab th:first-child,table.pr-tab td:first-child{text-align:left}
     <span class="now" id="ph-now"></span>
     <button class="theme" onclick="toggleTheme()" aria-label="Alternar tema claro ou escuro"><svg class="ico on-dark"><use href="#i-sun"/></svg><svg class="ico on-light"><use href="#i-moon"/></svg></button>
   </div></div>
+
+  <div class="ph" id="instalar" hidden>
+    <div class="inst-bar">
+      <span class="sq"><svg class="ico"><use href="#i-download"/></svg></span>
+      <div class="m">
+        <b>Instalar a app</b>
+        <span id="inst-txt">Abre do ecrã principal, sem browser</span>
+      </div>
+      <button class="inst-btn" id="inst-btn" onclick="instalarApp()">Instalar</button>
+      <button class="inst-x" onclick="dispensarInstalacao()" aria-label="Agora não"><svg class="ico"><use href="#i-x"/></svg></button>
+    </div>
+  </div>
 
   <!-- EQUIPA -->
   <section class="ph pv on" id="pv-equipa">
@@ -1844,6 +1875,7 @@ function applyMode(mode){
   document.getElementById('tv').classList.toggle('hide', mode!=='tv');
   document.getElementById('phone').classList.toggle('hide', mode==='tv');
   document.getElementById('switch').textContent = mode==='tv' ? 'Ver ecrã de telemóvel' : 'Ver ecrã da TV';
+  if(typeof mostrarConviteInstalacao==='function') mostrarConviteInstalacao();
   if(mode==='tv'){
     renderTV(); tvClock(); makeQR();
     setTimeout(()=>drawMap('tvmap'),150);
@@ -3443,6 +3475,59 @@ function initTheme(mode){
   // por omissão: TV escura (lê-se melhor à distância), telemóvel segue o sistema
   const sysDark = window.matchMedia && matchMedia('(prefers-color-scheme:dark)').matches;
   setTheme(mode==='tv' ? 'dark' : (sysDark?'dark':'light'));
+}
+
+/* ═══ Convite a instalar ═══
+   O Chrome só oferece a instalação num ícone discreto da barra de endereço, e
+   o Safari do iPhone não oferece nada — só o menu Partilhar. Por isso a app
+   traz o seu próprio convite: no Chromium usa o beforeinstallprompt, no iOS
+   explica os dois passos. Desaparece assim que estiver instalada, e quem o
+   dispensar não volta a vê-lo. */
+let promptInstalacao = null;
+
+const jaInstalada = ()=> (matchMedia && matchMedia('(display-mode: standalone)').matches)
+                      || navigator.standalone===true;
+const ehIOS = ()=> /iphone|ipad|ipod/i.test(navigator.userAgent)
+                && !/crios|fxios|edgios/i.test(navigator.userAgent);
+
+addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault();              // o convite é nosso, não o do browser
+  promptInstalacao = e;
+  mostrarConviteInstalacao();
+});
+addEventListener('appinstalled', ()=>{ promptInstalacao=null; esconderConvite(); });
+
+function esconderConvite(){
+  const el=document.getElementById('instalar'); if(el) el.hidden=true;
+}
+function dispensarInstalacao(){ store.set('somengil_instalar','nao'); esconderConvite(); }
+
+function mostrarConviteInstalacao(){
+  const el=document.getElementById('instalar'); if(!el) return;
+  const podeChromium = !!promptInstalacao;
+  const podeIOS = ehIOS() && !jaInstalada();
+  if(MODE==='tv' || jaInstalada() || store.get('somengil_instalar')==='nao'
+     || (!podeChromium && !podeIOS)){ el.hidden=true; return; }
+
+  // no iOS não há prompt: fica só a indicação dos dois passos
+  document.getElementById('inst-btn').hidden = !podeChromium;
+  document.getElementById('inst-txt').textContent = podeChromium
+    ? 'Abre do ecrã principal, sem browser'
+    : 'Partilhar → Adicionar ao ecrã principal';
+  el.hidden = false;
+}
+
+async function instalarApp(){
+  if(!promptInstalacao) return;
+  const botao=document.getElementById('inst-btn');
+  botao.disabled=true;
+  try{
+    promptInstalacao.prompt();
+    const {outcome} = await promptInstalacao.userChoice;
+    promptInstalacao = null;
+    if(outcome==='accepted') esconderConvite(); else dispensarInstalacao();
+  }catch(err){ /* o browser recusou abrir o diálogo: fica como estava */ }
+  botao.disabled=false;
 }
 
 /* ═══ App instalável ═══
