@@ -755,12 +755,12 @@ html.tv #ins-sheet{zoom:clamp(1,.115vh,2.2)}
 :root,html[data-theme="dark"]{
   --ch-fab:#28B04A; --ch-home:#0A84FF; --ch-via:#CC7F08; --ch-fer:#BF5AF2; --ch-vis:#09A6BF;
   --ch-grid:rgba(235,235,245,.14); --ch-track:rgba(120,120,128,.24);
-  --ch-ok:#28B04A; --ch-div:#0A84FF; --ch-falta:#D93A30; --ch-nreg:#BF5AF2;
+  --ch-ok:#28B04A; --ch-falta:#D93A30; --ch-neutro:#7C7C82;
 }
 html[data-theme="light"]{
   --ch-fab:#34C759; --ch-home:#007AFF; --ch-via:#FF9500; --ch-fer:#AF52DE; --ch-vis:#0BC6E3;
   --ch-grid:rgba(60,60,67,.14); --ch-track:rgba(120,120,128,.18);
-  --ch-ok:#34C759; --ch-div:#007AFF; --ch-falta:#FF3B30; --ch-nreg:#AF52DE;
+  --ch-ok:#34C759; --ch-falta:#FF3B30; --ch-neutro:#8E8E93;
 }
 
 .ins-charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
@@ -788,6 +788,7 @@ html[data-theme="light"]{
 .falha b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;flex:none;min-width:44px}
 .falha span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .falha span b{display:inline;min-width:0}
+.falhas-nota{margin-top:10px;font-size:11.5px;line-height:1.4;color:var(--text-3)}
 .instable .nmw{cursor:pointer}
 .instable .nmw:hover b{color:var(--blue)}
 
@@ -1820,9 +1821,12 @@ const LABEL2KEY = Object.fromEntries(ORDER.map(k=>[STATUS[k].label,k]));
    (maiúsculas, sem acentos, abreviada). Traduz tudo para a chave interna. */
 const LOCAL_ALIAS = {
   'na fabrica':'fabrica','fabrica':'fabrica','site':'fabrica','instalacoes':'fabrica','somengil':'fabrica',
+  'dias na fabrica':'fabrica',
   'home office':'home','homeoffice':'home','home':'home','remoto':'home','trabalho remoto':'home','teletrabalho':'home',
+  'dias em home office':'home',
   'em viagem':'viagem','viagem':'viagem','viagens':'viagem','travel':'viagem','visita a cliente':'viagem',
-  'de ferias':'ferias','ferias':'ferias','ausente':'ferias','holiday':'ferias'
+  'dias fora':'viagem','fora':'viagem',
+  'de ferias':'ferias','ferias':'ferias','ausente':'ferias','holiday':'ferias','dias de ferias':'ferias'
 };
 const chaveLocal = t=>{
   const k=String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase().replace(/\s+/g,' ');
@@ -2578,7 +2582,7 @@ function linhaVazia(){
   return {
     fabrica:new Set(), home:new Set(), viagem:new Set(), ferias:new Set(), visitas:new Set(),
     paises:new Set(), km:0, viagens:0,
-    conforme:[], divergente:[], semPlano:[], semRegisto:[]
+    conforme:[], divergente:[], soRegisto:[], soPlano:[]
   };
 }
 
@@ -2627,6 +2631,10 @@ function mapaPlaneado(periodo,mesAtual){
 /** Uma visita inversa planeada é recebida na fábrica: o check-in "Na fábrica"
     nesse dia cumpre o planeado. */
 const cumprePlano = (prev,obs)=> prev===obs || (prev==='visitas' && obs==='fabrica');
+
+/* Só há falha quando os dois badges existem para o mesmo dia e são diferentes.
+   Um dia com registo mas sem plano (ou o contrário) não tem com que comparar:
+   fica em "sem comparação", não conta como falha. */
 
 function buildInsights(periodo){
   const hoje = isoHoje(), mesAtual = hoje.slice(0,7);
@@ -2687,8 +2695,8 @@ function buildInsights(periodo){
     dias.forEach(dia=>{
       const prev=p.get(dia), obs=a.get(dia);
       if(prev && obs){ (cumprePlano(prev,obs) ? l.conforme : l.divergente).push({dia,prev,obs}); }
-      else if(obs){ l.semPlano.push({dia,obs}); }
-      else { l.semRegisto.push({dia,prev}); }
+      else if(obs){ l.soRegisto.push({dia,obs}); }
+      else { l.soPlano.push({dia,prev}); }
     });
   });
 
@@ -2727,13 +2735,12 @@ const SERIES_DIAS = [
   {k:'ferias',  nome:'Férias',      cor:'var(--ch-fer)'},
   {k:'visitas', nome:'Visitas',     cor:'var(--ch-vis)'}
 ];
-/* Ordem e matizes validados para daltonismo: verde↔laranja não se distinguem
-   em deuteranopia, por isso a divergência é azul e não laranja. */
+/* Estado do dia: bom / falha / sem termo de comparação. O cinzento é o
+   convencional "sem dados" — só um dos lados registou, não há badges a comparar. */
 const SERIES_CONF = [
-  {k:'conforme',   nome:'Conforme',          cor:'var(--ch-ok)'},
-  {k:'divergente', nome:'Divergente',        cor:'var(--ch-div)'},
-  {k:'semPlano',   nome:'Registo sem plano', cor:'var(--ch-falta)'},
-  {k:'semRegisto', nome:'Plano sem registo', cor:'var(--ch-nreg)'}
+  {k:'conforme',      nome:'Conforme',              cor:'var(--ch-ok)'},
+  {k:'divergente',    nome:'Divergente (falha)',    cor:'var(--ch-falta)'},
+  {k:'semComparacao', nome:'Sem comparação',        cor:'var(--ch-neutro)'}
 ];
 
 /** Coluna vertical: topo arredondado (4px), base quadrada. */
@@ -2854,7 +2861,7 @@ function renderInsights(){
   const dados=buildInsights(insPeriodo);
   const ordenado=members.slice().sort((a,b)=>a.name.localeCompare(b.name,'pt'));
   const tot={fabrica:0,home:0,viagem:0,ferias:0,visitas:0,viagens:0,km:0,
-             conforme:0,divergente:0,semPlano:0,semRegisto:0,pesoSoma:0,pesoDias:0};
+             conforme:0,divergente:0,soRegisto:0,soPlano:0,pesoSoma:0,pesoDias:0};
 
   const fila=ordenado.map(m=>{
     const d=dados.get(m.id)||linhaVazia();
@@ -2862,7 +2869,7 @@ function renderInsights(){
     tot.fabrica+=d.fabrica.size; tot.home+=d.home.size; tot.viagem+=d.viagem.size;
     tot.ferias+=d.ferias.size; tot.visitas+=d.visitas.size; tot.viagens+=d.viagens; tot.km+=d.km;
     tot.conforme+=d.conforme.length; tot.divergente+=d.divergente.length;
-    tot.semPlano+=d.semPlano.length; tot.semRegisto+=d.semRegisto.length;
+    tot.soRegisto+=d.soRegisto.length; tot.soPlano+=d.soPlano.length;
     if(t!==null){ tot.pesoSoma+=t*uteis; tot.pesoDias+=uteis; }
     return {m,d,taxa:t,uteis};
   });
@@ -2872,7 +2879,7 @@ function renderInsights(){
     <thead><tr>
       <th>Comercial</th><th>Esforço</th><th>Fábrica</th><th>Home office</th><th>Fora (viagem)</th><th>Férias</th>
       <th>Visitas recebidas</th><th>Nº viagens</th><th>Países</th><th>Km percorridos</th>
-      <th>Sem plano</th><th>Divergente</th><th>Sem registo</th>
+      <th>Conformes</th><th>Falhas</th><th>Só registo</th><th>Só plano</th>
     </tr></thead>
     <tbody>${fila.map(({m,d,taxa})=>`<tr>
       <td><span class="nmw" role="button" tabindex="0" title="Ver insights individuais"
@@ -2887,28 +2894,29 @@ function renderInsights(){
       <td>${d.viagens}</td>
       <td>${d.paises.size}</td>
       <td>${Math.round(d.km).toLocaleString('pt-PT')}</td>
-      <td>${d.semPlano.length}</td>
+      <td>${d.conforme.length}</td>
       <td>${d.divergente.length}</td>
-      <td>${d.semRegisto.length}</td>
-    </tr>`).join('') || '<tr><td colspan="13" class="ins-vazio">Sem registos neste período.</td></tr>'}</tbody>
+      <td>${d.soRegisto.length}</td>
+      <td>${d.soPlano.length}</td>
+    </tr>`).join('') || '<tr><td colspan="14" class="ins-vazio">Sem registos neste período.</td></tr>'}</tbody>
     <tfoot><tr>
       <td>Equipa · total</td>
       <td>${tot.pesoDias?Math.round(tot.pesoSoma/tot.pesoDias)+'%':'—'}</td>
       <td>${tot.fabrica}</td><td>${tot.home}</td><td>${tot.viagem}</td><td>${tot.ferias}</td>
       <td>${tot.visitas}</td><td>${tot.viagens}</td><td>—</td><td>${Math.round(tot.km).toLocaleString('pt-PT')}</td>
-      <td>${tot.semPlano}</td><td>${tot.divergente}</td><td>${tot.semRegisto}</td>
+      <td>${tot.conforme}</td><td>${tot.divergente}</td><td>${tot.soRegisto}</td><td>${tot.soPlano}</td>
     </tr></tfoot>`;
 
   // ── KPIs ──
   const taxaMedia = tot.pesoDias ? Math.round(tot.pesoSoma/tot.pesoDias) : null;
-  const registados = tot.conforme+tot.divergente+tot.semPlano;
-  const cobertura = pct(tot.conforme+tot.divergente, registados);
+  const comparaveis = tot.conforme+tot.divergente;
+  const conformidade = pct(tot.conforme, comparaveis);
   document.getElementById('ins-mini').innerHTML = `
     <div><div class="v">${taxaMedia===null?'—':taxaMedia+'%'}</div><div class="k">taxa de esforço média</div></div>
     <div><div class="v">${tot.viagem}</div><div class="k">dias fora</div></div>
     <div><div class="v">${Math.round(tot.km).toLocaleString('pt-PT')}</div><div class="k">km percorridos</div></div>
     <div><div class="v">${tot.viagens}</div><div class="k">viagens</div></div>
-    <div><div class="v">${cobertura===null?'—':cobertura+'%'}</div><div class="k">dias registados com plano</div></div>`;
+    <div><div class="v">${conformidade===null?'—':conformidade+'%'}</div><div class="k">conformidade dos dias comparáveis</div></div>`;
 
   // ── gráfico 1: taxa de esforço (série única, ordenada) ──
   const itensEsforco = fila.filter(f=>f.taxa!==null)
@@ -2930,29 +2938,26 @@ function renderInsights(){
   const itensConf = fila
     .map(f=>({nome:shortName(f.m.name), curto:nomeCurtoLbl(f.m.name),
               conforme:f.d.conforme.length, divergente:f.d.divergente.length,
-              semPlano:f.d.semPlano.length, semRegisto:f.d.semRegisto.length}))
+              semComparacao:f.d.soRegisto.length+f.d.soPlano.length}))
     .filter(i=>SERIES_CONF.some(s=>i[s.k]>0))
-    .sort((a,b)=>(b.semPlano+b.divergente+b.semRegisto)-(a.semPlano+a.divergente+a.semRegisto));
+    .sort((a,b)=>(b.divergente-a.divergente)||(b.semComparacao-a.semComparacao));
   pintarGrafico('ch-conf', w => svgEmpilhado(itensConf,SERIES_CONF,{escalaComum:true,largura:w}) + legendaHtml(SERIES_CONF));
 
-  // ── falhas concretas, as mais recentes primeiro ──
+  // ── falhas: só os dias em que os dois badges existem e são diferentes ──
   const falhas=[];
   fila.forEach(({m,d})=>{
-    d.semPlano.forEach(f=>falhas.push({dia:f.dia,nome:shortName(m.name),tipo:'semPlano',
-      txt:`registou <b>${STATUS[f.obs]?STATUS[f.obs].short:f.obs}</b> sem planeamento`}));
-    d.divergente.forEach(f=>falhas.push({dia:f.dia,nome:shortName(m.name),tipo:'divergente',
+    d.divergente.forEach(f=>falhas.push({dia:f.dia,nome:shortName(m.name),
       txt:`planeou <b>${STATUS[f.prev]?STATUS[f.prev].short:f.prev}</b> e registou <b>${STATUS[f.obs]?STATUS[f.obs].short:f.obs}</b>`}));
-    d.semRegisto.forEach(f=>falhas.push({dia:f.dia,nome:shortName(m.name),tipo:'semRegisto',
-      txt:`planeou <b>${STATUS[f.prev]?STATUS[f.prev].short:f.prev}</b> e não registou o dia`}));
   });
   falhas.sort((a,b)=>b.dia.localeCompare(a.dia));
-  const corFalha={semPlano:'var(--ch-falta)',divergente:'var(--ch-div)',semRegisto:'var(--ch-nreg)'};
-  document.getElementById('ins-falhas').innerHTML = falhas.length ? `
-    <div class="falhas-head">${falhas.length} ${falhas.length===1?'falha':'falhas'} de conformidade${falhas.length>10?' · 10 mais recentes':''}</div>
+  const semComp = tot.soRegisto+tot.soPlano;
+  const notaSemComp = semComp ? `<div class="falhas-nota">${semComp} ${semComp===1?'dia sem comparação':'dias sem comparação'}: ${tot.soRegisto} só com registo diário, ${tot.soPlano} só com planeamento.</div>` : '';
+  document.getElementById('ins-falhas').innerHTML = (falhas.length ? `
+    <div class="falhas-head">${falhas.length} ${falhas.length===1?'falha':'falhas'}${falhas.length>10?' · 10 mais recentes':''}</div>
     ${falhas.slice(0,10).map(f=>`<div class="falha">
-      <i style="background:${corFalha[f.tipo]}"></i>
+      <i style="background:var(--ch-falta)"></i>
       <b>${ddmm(f.dia)}</b><span>${esc(f.nome)} ${f.txt}</span></div>`).join('')}`
-    : `<div class="falhas-head ok">Sem falhas: todos os dias registados têm planeamento correspondente.</div>`;
+    : `<div class="falhas-head ok">Sem falhas: nos dias com planeamento e registo, os dois coincidem.</div>`) + notaSemComp;
 
   window.__insDados={fila,tot,periodo:insPeriodo};
 }
@@ -2971,8 +2976,8 @@ function openPersonInsights(id){
     `${periodoTxt} · ${uteis} ${uteis===1?'dia útil registado':'dias úteis registados'}`;
 
   const paises=[...d.paises].sort((a,b)=>a.localeCompare(b,'pt'));
-  const registados=d.conforme.length+d.divergente.length+d.semPlano.length;
-  const cobertura=pct(d.conforme.length+d.divergente.length,registados);
+  const comparaveis=d.conforme.length+d.divergente.length;
+  const conformidade=pct(d.conforme.length,comparaveis);
 
   document.getElementById('pins-body').innerHTML = `
     <div class="pins-hero">
@@ -3012,7 +3017,8 @@ function openPersonInsights(id){
 
     <div class="chartcard">
       <h4>Planeamento vs registo diário</h4>
-      <div class="cap">${cobertura===null?'Sem dias avaliados':`${cobertura}% dos dias registados tinham planeamento`}</div>
+      <div class="cap">${conformidade===null?'Sem dias com planeamento e registo para comparar'
+        :`${conformidade}% dos ${comparaveis} ${comparaveis===1?'dia comparável está conforme':'dias comparáveis estão conformes'}`}</div>
       <div id="pc-conf"></div>
       ${legendaHtml(SERIES_CONF)}
       <div class="pins-falhas">${listaFalhasPessoa(d)}</div>
@@ -3029,7 +3035,7 @@ function openPersonInsights(id){
   pintarGrafico('pc-mes',  w=>svgColunas(serieMensal(id,6),'viagem',{largura:w}));
   pintarGrafico('pc-conf', w=>svgEmpilhado([{nome:shortName(m.name),curto:'Dias',
       conforme:d.conforme.length,divergente:d.divergente.length,
-      semPlano:d.semPlano.length,semRegisto:d.semRegisto.length}],SERIES_CONF,{largura:w}));
+      semComparacao:d.soRegisto.length+d.soPlano.length}],SERIES_CONF,{largura:w}));
   pinsAberto=id;
 }
 let pinsAberto=null;
@@ -3047,17 +3053,14 @@ addEventListener('resize',()=>{
 });
 
 function listaFalhasPessoa(d){
-  const linhas=[
-    ...d.semPlano.map(f=>({dia:f.dia,cor:'var(--ch-falta)',
-      txt:`registou <b>${STATUS[f.obs]?STATUS[f.obs].short:f.obs}</b> sem planeamento`})),
-    ...d.divergente.map(f=>({dia:f.dia,cor:'var(--ch-div)',
-      txt:`planeou <b>${STATUS[f.prev]?STATUS[f.prev].short:f.prev}</b>, registou <b>${STATUS[f.obs]?STATUS[f.obs].short:f.obs}</b>`})),
-    ...d.semRegisto.map(f=>({dia:f.dia,cor:'var(--ch-nreg)',
-      txt:`planeou <b>${STATUS[f.prev]?STATUS[f.prev].short:f.prev}</b>, sem registo diário`}))
-  ].sort((a,b)=>b.dia.localeCompare(a.dia));
-  if(!linhas.length) return `<div class="falhas-head ok">Sem falhas neste período.</div>`;
+  const linhas=d.divergente.slice().sort((a,b)=>b.dia.localeCompare(a.dia));
+  const semComp=d.soRegisto.length+d.soPlano.length;
+  const nota = semComp ? `<div class="falhas-nota">${semComp} ${semComp===1?'dia sem comparação':'dias sem comparação'}: ${d.soRegisto.length} só com registo diário, ${d.soPlano.length} só com planeamento.</div>` : '';
+  if(!linhas.length) return `<div class="falhas-head ok">Sem falhas neste período.</div>` + nota;
   return `<div class="falhas-head">${linhas.length} ${linhas.length===1?'falha':'falhas'}${linhas.length>12?' · 12 mais recentes':''}</div>`
-    + linhas.slice(0,12).map(l=>`<div class="falha"><i style="background:${l.cor}"></i><b>${ddmm(l.dia)}</b><span>${l.txt}</span></div>`).join('');
+    + linhas.slice(0,12).map(f=>`<div class="falha"><i style="background:var(--ch-falta)"></i><b>${ddmm(f.dia)}</b>`
+      + `<span>planeou <b>${STATUS[f.prev]?STATUS[f.prev].short:f.prev}</b>, registou <b>${STATUS[f.obs]?STATUS[f.obs].short:f.obs}</b></span></div>`).join('')
+    + nota;
 }
 
 /* ═══ Acesso (palavra-passe) ═══ */
@@ -3101,26 +3104,33 @@ function exportInsightsExcel(){
 
   const cab=['Comercial','Taxa de esforço (%)','Dias úteis registados','Na fábrica (dias)','Home office (dias)',
              'Fora / viagem (dias)','Férias (dias)','Visitas recebidas (dias)','Nº de viagens','Países visitados',
-             'Km percorridos (ida e volta)','Conformes','Divergentes','Registo sem plano','Plano sem registo','Cobertura do plano (%)'];
+             'Km percorridos (ida e volta)','Conformes','Falhas (divergências)','Só com registo','Só com plano','Conformidade (%)'];
   const linhas=fila.map(({m,d,taxa,uteis})=>{
-    const registados=d.conforme.length+d.divergente.length+d.semPlano.length;
+    const comparaveis=d.conforme.length+d.divergente.length;
     return [m.name, taxa===null?'':taxa, uteis, d.fabrica.size, d.home.size, d.viagem.size, d.ferias.size,
             d.visitas.size, d.viagens, d.paises.size, Math.round(d.km),
-            d.conforme.length, d.divergente.length, d.semPlano.length, d.semRegisto.length,
-            registados?Math.round((d.conforme.length+d.divergente.length)/registados*100):''];
+            d.conforme.length, d.divergente.length, d.soRegisto.length, d.soPlano.length,
+            comparaveis?Math.round(d.conforme.length/comparaveis*100):''];
   });
   const totais=['Equipa · total', tot.pesoDias?Math.round(tot.pesoSoma/tot.pesoDias):'', '',
                 tot.fabrica, tot.home, tot.viagem, tot.ferias, tot.visitas, tot.viagens, '',
-                Math.round(tot.km), tot.conforme, tot.divergente, tot.semPlano, tot.semRegisto, ''];
+                Math.round(tot.km), tot.conforme, tot.divergente, tot.soRegisto, tot.soPlano, ''];
 
-  // segundo quadro: cada falha de conformidade, com data
+  // segundo quadro: as falhas (planeado e registado diferentes no mesmo dia)
   const falhas=[];
   fila.forEach(({m,d})=>{
-    d.semPlano.forEach(f=>falhas.push([m.name,f.dia,'Registo sem plano','',STATUS[f.obs]?STATUS[f.obs].label:f.obs]));
-    d.divergente.forEach(f=>falhas.push([m.name,f.dia,'Divergente',STATUS[f.prev]?STATUS[f.prev].label:f.prev,STATUS[f.obs]?STATUS[f.obs].label:f.obs]));
-    d.semRegisto.forEach(f=>falhas.push([m.name,f.dia,'Plano sem registo',STATUS[f.prev]?STATUS[f.prev].label:f.prev,'']));
+    d.divergente.forEach(f=>falhas.push([m.name,f.dia,
+      STATUS[f.prev]?STATUS[f.prev].label:f.prev, STATUS[f.obs]?STATUS[f.obs].label:f.obs]));
   });
   falhas.sort((a,b)=>b[1].localeCompare(a[1]));
+
+  // terceiro quadro: dias sem termo de comparação (não são falhas)
+  const semComp=[];
+  fila.forEach(({m,d})=>{
+    d.soRegisto.forEach(f=>semComp.push([m.name,f.dia,'Só registo diário','',STATUS[f.obs]?STATUS[f.obs].label:f.obs]));
+    d.soPlano.forEach(f=>semComp.push([m.name,f.dia,'Só planeamento',STATUS[f.prev]?STATUS[f.prev].label:f.prev,'']));
+  });
+  semComp.sort((a,b)=>b[1].localeCompare(a[1]));
 
   const tr=(arr,tag='td')=>`<tr>${arr.map(v=>`<${tag}>${typeof v==='string'?esc(v):v}</${tag}>`).join('')}</tr>`;
   const html=`<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8">
@@ -3131,9 +3141,13 @@ function exportInsightsExcel(){
 <p>BIZDEV Team · Somengil — análise de esforço (${esc(titulo)}, extraído a ${esc(hoje)})</p>
 <table border="1"><thead>${tr(cab,'th')}</thead><tbody>${linhas.map(l=>tr(l)).join('')}</tbody><tfoot>${tr(totais)}</tfoot></table>
 <p>&nbsp;</p>
-<p>Falhas de conformidade — planeamento de vários dias vs registo diário</p>
-<table border="1"><thead>${tr(['Comercial','Dia','Tipo de falha','Planeado','Registado'],'th')}</thead>
-<tbody>${falhas.length?falhas.map(l=>tr(l)).join(''):tr(['—','','Sem falhas no período','',''])}</tbody></table>
+<p>Falhas — dias com planeamento e registo diferentes</p>
+<table border="1"><thead>${tr(['Comercial','Dia','Planeado','Registado'],'th')}</thead>
+<tbody>${falhas.length?falhas.map(l=>tr(l)).join(''):tr(['—','','Sem falhas no período',''])}</tbody></table>
+<p>&nbsp;</p>
+<p>Dias sem comparação — só um dos lados foi registado (não são falhas)</p>
+<table border="1"><thead>${tr(['Comercial','Dia','Situação','Planeado','Registado'],'th')}</thead>
+<tbody>${semComp.length?semComp.map(l=>tr(l)).join(''):tr(['—','','Nenhum','',''])}</tbody></table>
 </body></html>`;
   const blob=new Blob(['﻿'+html],{type:'application/vnd.ms-excel;charset=utf-8'});
   const a=document.createElement('a');
