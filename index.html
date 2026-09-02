@@ -549,11 +549,11 @@ html.tv #pcal-sheet{zoom:clamp(1,.115vh,2.2)}
 #pcal-sub{font-size:13px;color:var(--text-2);margin-top:1px}
 #pcal-head .x{margin-left:auto;width:32px;height:32px;border-radius:50%;background:var(--fill);color:var(--text-2);display:flex;align-items:center;justify-content:center;font-size:15px;flex:none}
 #pcal-body{padding:0 20px}
-#pcal-grid .d.fab{background:color-mix(in srgb,var(--green) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--green) 45%,transparent)}
-#pcal-grid .d.hom{background:color-mix(in srgb,var(--blue) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--blue) 45%,transparent)}
-#pcal-grid .d.vis{background:color-mix(in srgb,var(--visit) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--visit) 45%,transparent)}
-#pcal-grid .d.via{background:color-mix(in srgb,var(--orange) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--orange) 45%,transparent)}
-#pcal-grid .d.fer{background:color-mix(in srgb,var(--purple) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--purple) 45%,transparent)}
+#pcal-grid .d.fab,.calmes .d.fab{background:color-mix(in srgb,var(--green) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--green) 45%,transparent)}
+#pcal-grid .d.hom,.calmes .d.hom{background:color-mix(in srgb,var(--blue) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--blue) 45%,transparent)}
+#pcal-grid .d.vis,.calmes .d.vis{background:color-mix(in srgb,var(--visit) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--visit) 45%,transparent)}
+#pcal-grid .d.via,.calmes .d.via{background:color-mix(in srgb,var(--orange) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--orange) 45%,transparent)}
+#pcal-grid .d.fer,.calmes .d.fer{background:color-mix(in srgb,var(--purple) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--purple) 45%,transparent)}
 #pcal-grid .d .tag{font-size:9px;font-weight:600;letter-spacing:.02em}
 #pcal-legenda{display:flex;gap:16px;padding:12px 2px 4px;font-size:12px;color:var(--text-2)}
 #pcal-legenda span{display:flex;align-items:center;gap:6px}
@@ -898,6 +898,7 @@ html.tv #pins-sheet{zoom:clamp(1,.115vh,2.2)}
   --ch-ok:#34C759; --ch-falta:#FF3B30; --ch-neutro:#8E8E93;
   --ch-track:#E5E5EA; --ch-grid:#D1D1D6;
   --text:#000; --text-2:#3C3C43; --text-3:#6E6E73; --sep:#D1D1D6;
+  --fill:#F2F2F7; --fill-2:#E5E5EA; --blue:#007AFF;
   color:#000;background:#fff;font-size:11px;line-height:1.45;letter-spacing:0;
   -webkit-print-color-adjust:exact;print-color-adjust:exact;
 }
@@ -2893,30 +2894,6 @@ function buildInsights(mes){
   return linhas;
 }
 
-/** Dias por tipo, mês a mês (histórico completo) — para o gráfico individual. */
-function serieMensal(id,nMeses,mesFim){
-  const serie=new Map();
-  const chave=d=>d.slice(0,7);
-  const ref=mesFim ? new Date(+mesFim.slice(0,4),+mesFim.slice(5,7)-1,1) : new Date();
-  for(let i=nMeses-1;i>=0;i--){
-    const d=new Date(ref.getFullYear(),ref.getMonth()-i,1);
-    serie.set(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,{fabrica:0,home:0,viagem:0,ferias:0,vistos:new Set()});
-  }
-  const porDia=new Map();
-  logs.forEach(row=>{
-    const m=acharMembro(row.memberName); if(!m || m.id!==id) return;
-    const dia=String(row.time).split(' ')[0];
-    const k=dia+'';
-    const atual=porDia.get(k);
-    if(!atual || row.time>atual.time) porDia.set(k,{dia,status:row.status,time:row.time});
-  });
-  porDia.forEach(r=>{
-    const mes=chave(r.dia), alvo=serie.get(mes);
-    if(alvo && alvo[r.status]!==undefined) alvo[r.status]++;
-  });
-  return [...serie.entries()].map(([mes,v])=>({mes,...v}));
-}
-
 /* ═══ Gráficos (SVG inline, sem dependências) ═══ */
 const SERIES_DIAS = [
   {k:'fabrica', nome:'Na fábrica',  cor:'var(--ch-fab)'},
@@ -2932,13 +2909,6 @@ const SERIES_CONF = [
   {k:'divergente',    nome:'Divergente (falha)',    cor:'var(--ch-falta)'},
   {k:'semComparacao', nome:'Sem comparação',        cor:'var(--ch-neutro)'}
 ];
-
-/** Coluna vertical: topo arredondado (4px), base quadrada. */
-function colunaPath(x,y,w,h,r){
-  if(h<=0) return '';
-  r=Math.max(0,Math.min(r,w/2,h));
-  return `M${x},${y+h} V${y+r} A${r},${r} 0 0 1 ${x+r},${y} H${x+w-r} A${r},${r} 0 0 1 ${x+w},${y+r} V${y+h} Z`;
-}
 
 /** Barra horizontal com base quadrada e ponta arredondada (4px). */
 function barraPath(x,y,w,h,r){
@@ -2996,25 +2966,31 @@ function svgEmpilhado(itens,series,{largura=340,escalaComum=false}={}){
   return `<svg class="chartsvg" viewBox="0 0 ${largura} ${alt}" role="img" aria-label="Gráfico de barras empilhadas">${corpo}</svg>`;
 }
 
-/** Colunas por mês (tendência) — série única. */
-function svgColunas(serie,chave,{largura=320,altura=110}={}){
-  if(!serie.length) return `<div class="chvazio">Sem histórico.</div>`;
-  const baixo=22, topo=20, larguraCol=Math.min(24,(largura-8)/serie.length-8);
-  const max=Math.max(...serie.map(s=>s[chave]||0),1);
-  const passo=(largura-8)/serie.length;
-  const y0=altura-baixo;
-  const corpo=serie.map((s,i)=>{
-    const v=s[chave]||0;
-    const h=v?Math.max(3,(v/max)*(y0-topo)):0;
-    const x=4+i*passo+(passo-larguraCol)/2;
-    const rot=s.mes.slice(5)+'/'+s.mes.slice(2,4);
-    return `<g><title>${rot}: ${v} dias</title>
-      <path d="${colunaPath(x,y0-h,larguraCol,h,4)}" style="fill:var(--ch-via)"></path>
-      ${v?`<text class="chval" x="${x+larguraCol/2}" y="${y0-h-4}" text-anchor="middle">${v}</text>`:''}
-      <text class="chlbl" x="${x+larguraCol/2}" y="${altura-6}" text-anchor="middle">${rot}</text></g>`;
-  }).join('');
-  return `<svg class="chartsvg" viewBox="0 0 ${largura} ${altura}" role="img" aria-label="Dias em viagem por mês">
-    <line x1="4" y1="${y0}" x2="${largura-4}" y2="${y0}" style="stroke:var(--ch-grid);stroke-width:1"></line>${corpo}</svg>`;
+/** Calendário do mês, com a cor do estado de cada dia. Usa as mesmas
+    contagens do resto do card, por isso um dia que veio do planeamento
+    aparece na mesma — o gráfico anterior lia só os check-ins e ficava vazio. */
+function calendarioMes(d,mes){
+  const ano=+mes.slice(0,4), m=+mes.slice(5,7);
+  const desloca=(new Date(ano,m-1,1).getDay()+6)%7;      // a semana começa à segunda
+  const nDias=new Date(ano,m,0).getDate();
+  const hoje=isoHoje();
+  const rotulo={via:'Em viagem',fer:'Férias',fab:'Na fábrica',hom:'Home office',vis:'Visita recebida'};
+
+  let html=['S','T','Q','Q','S','S','D'].map(x=>`<div class="wd">${x}</div>`).join('');
+  for(let i=0;i<desloca;i++) html+='<div class="d off"></div>';
+  for(let n=1;n<=nDias;n++){
+    const dia=`${mes}-${String(n).padStart(2,'0')}`;
+    // a viagem manda; a visita recebida só pinta o dia quando mais nada o ocupa
+    const t = d.viagem.has(dia)  ? 'via'
+            : d.ferias.has(dia)  ? 'fer'
+            : d.fabrica.has(dia) ? 'fab'
+            : d.home.has(dia)    ? 'hom'
+            : d.visitas.has(dia) ? 'vis' : '';
+    const extra = (t && t!=='vis' && d.visitas.has(dia)) ? ' + visita recebida' : '';
+    const dica = t ? rotulo[t]+extra : '';
+    html+=`<div class="d ${t}${dia===hoje?' hoje':''}"${dica?` title="${esc(dica)}"`:''}><span class="num">${n}</span></div>`;
+  }
+  return `<div class="tcal calmes">${html}</div>`;
 }
 
 /** Medidor de arco para a taxa de esforço (rácio contra um limite). */
@@ -3247,9 +3223,10 @@ function openPersonInsights(id){
     </div>
 
     <div class="chartcard">
-      <h4>Dias em viagem por mês</h4>
-      <div class="cap">6 meses até ${esc(insTotal?nomeMes(isoHoje().slice(0,7)):nomeMes(insMes))} · histórico completo</div>
-      <div id="pc-mes"></div>
+      <h4>Calendário do mês</h4>
+      <div class="cap">${esc(nomeMes(insTotal?isoHoje().slice(0,7):insMes))} · a cor indica o estado de cada dia</div>
+      ${calendarioMes(d, insTotal?isoHoje().slice(0,7):insMes)}
+      ${legendaHtml(SERIES_DIAS)}
     </div>
 
     <div class="chartcard">
@@ -3269,7 +3246,6 @@ function openPersonInsights(id){
   pintarGrafico('pc-dist', w=>svgEmpilhado([{nome:shortName(m.name),curto:'Dias',
       fabrica:d.fabrica.size,home:d.home.size,viagem:d.viagem.size,
       ferias:d.ferias.size,visitas:d.visitas.size}],SERIES_DIAS,{largura:w}));
-  pintarGrafico('pc-mes',  w=>svgColunas(serieMensal(id,6,insTotal?null:insMes),'viagem',{largura:w}));
   pintarGrafico('pc-conf', w=>svgEmpilhado([{nome:shortName(m.name),curto:'Dias',
       conforme:d.conforme.length,divergente:d.divergente.length,
       semComparacao:d.soRegisto.length+d.soPlano.length}],SERIES_CONF,{largura:w}));
@@ -3340,8 +3316,8 @@ function exportPersonPdf(){
     </div>
 
     <div class="pr-sec">
-      <h3>Dias em viagem por mês · 6 meses até ${esc(insTotal?nomeMes(hoje.slice(0,7)):nomeMes(insMes))}</h3>
-      ${svgColunas(serieMensal(id,6,insTotal?null:insMes),'viagem',{largura:L})}
+      <h3>Calendário de ${esc(nomeMes(insTotal?hoje.slice(0,7):insMes))}</h3>
+      ${calendarioMes(d, insTotal?hoje.slice(0,7):insMes)}
     </div>
 
     <div class="pr-sec">
