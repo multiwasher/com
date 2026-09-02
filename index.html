@@ -245,13 +245,16 @@ textarea::placeholder{color:var(--text-3)}
 .pl-logo-prev img{max-width:100%;max-height:100%;object-fit:contain;display:block}
 #pl-logo{margin-left:10px;max-width:52%}
 
-/* logótipo do cliente que vem visitar, no cartão da coluna Visitas */
+/* Logótipo do cliente que vem visitar. Placa branca porque um logótipo
+   costuma vir com fundo transparente e desaparecia no tema escuro. */
 .p .cliente-logo{
-  flex:none;height:clamp(1.6rem,26cqh,3.4rem);max-width:clamp(4rem,30cqw,9rem);
-  border-radius:.5rem;background:#fff;padding:.25rem .4rem;
-  display:flex;align-items:center;justify-content:center;overflow:hidden;
+  flex:0 1 auto;width:100%;height:3.6rem;min-height:1.8rem;border-radius:.9rem;background:#fff;
+  padding:.5rem .7rem;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);
 }
 .p .cliente-logo img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+.col-body.duas .p .cliente-logo{height:3rem;border-radius:.7rem;padding:.35rem .5rem}
+
 
 .inst-bar{
   display:flex;align-items:center;gap:11px;margin-top:14px;padding:11px 13px;border-radius:14px;
@@ -1389,7 +1392,7 @@ table.pr-tab th:first-child,table.pr-tab td:first-child{text-align:left}
 
 <script>
 /* ═══ Configuração ═══ */
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9eYdTFL5db414X06T-zb7IgPJPr6xO7JRHXHslAKDPtIdXvnyAhUqJy0FHV-3zSrq/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEEWLyq_MNjkmHbFBUdHbTgciYcwfBTOwisBBOQJqN-uZ5eaQ0PLOvnHgDF23HNUSy/exec";
 /* Endereço público desta página — é o que fica no código QR da TV.
    Deixe vazio para usar automaticamente o endereço atual. */
 const CHECKIN_URL = "";
@@ -1494,10 +1497,10 @@ function renderTV(){
             <div class="tm-row">
               <div class="tm">${marcaTempo(card)}</div>
               ${temClock ? horaViagem(card.plano.pais) : ''}
-              ${logoVisita ? `<span class="cliente-logo"><img src="${esc(logoVisita)}" alt="" loading="lazy" onerror="this.parentNode.remove()"></span>` : ''}
             </div>
           </div>
         </div>
+        ${logoVisita ? `<div class="cliente-logo" title="${esc(card.obs||'')}"><img src="${esc(logoVisita)}" alt="" loading="lazy" onerror="this.parentNode.remove()"></div>` : ''}
         ${semSb ? '' : `<div class="sb">${(k==='viagem' || k==='visitas') && card.plano?.pais ? `<span class="flag" title="${esc(card.plano.pais)}">${bandeiraPais(card.plano.pais)}</span>` : ''}${second}</div>`}
         <div class="pfoot">
           <div class="meter" title="Fábrica ${m.metrics.fabrica||0} · Home ${m.metrics.home||0} · Viagem ${m.metrics.viagem||0} · Férias ${m.metrics.ferias||0}">
