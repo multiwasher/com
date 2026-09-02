@@ -749,6 +749,92 @@ html.tv #ins-sheet{zoom:clamp(1,.115vh,2.2)}
 .instable .av-mini img{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;display:block}
 .ins-vazio{text-align:center!important;color:var(--text-2);padding:24px!important}
 
+/* gráficos: mesmos matizes das colunas, um passo mais escuro no tema escuro
+   (a versão de ecrã falha a banda de luminosidade sobre superfície escura).
+   Validado com o validador de paletas: banda, croma, CVD e contraste. */
+:root,html[data-theme="dark"]{
+  --ch-fab:#28B04A; --ch-home:#0A84FF; --ch-via:#CC7F08; --ch-fer:#BF5AF2; --ch-vis:#09A6BF;
+  --ch-grid:rgba(235,235,245,.14); --ch-track:rgba(120,120,128,.24);
+  --ch-ok:#28B04A; --ch-div:#0A84FF; --ch-falta:#D93A30; --ch-nreg:#BF5AF2;
+}
+html[data-theme="light"]{
+  --ch-fab:#34C759; --ch-home:#007AFF; --ch-via:#FF9500; --ch-fer:#AF52DE; --ch-vis:#0BC6E3;
+  --ch-grid:rgba(60,60,67,.14); --ch-track:rgba(120,120,128,.18);
+  --ch-ok:#34C759; --ch-div:#007AFF; --ch-falta:#FF3B30; --ch-nreg:#AF52DE;
+}
+
+.ins-charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+@media (max-width:860px){ .ins-charts{grid-template-columns:1fr} }
+.chartcard{background:var(--fill);border-radius:14px;padding:14px 16px 13px;min-width:0}
+.chartcard + .chartcard{margin-top:14px}
+.chartcard h4{margin:0 0 2px;font-size:13px;font-weight:700;letter-spacing:-.015em}
+.chartcard .cap{font-size:11px;color:var(--text-2);margin-bottom:12px;line-height:1.35}
+.chartsvg{width:100%;height:auto;display:block}
+.chartsvg text{font-family:inherit}
+.chartsvg .chlbl{font-size:10.5px;fill:var(--text-2);text-transform:none;letter-spacing:0}
+.chartsvg .chval{font-size:10.5px;fill:var(--text);font-weight:600;font-variant-numeric:tabular-nums}
+.chleg{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:11px;font-size:11px;color:var(--text-2);line-height:1.4}
+.chleg span{display:inline-flex;align-items:center;gap:6px}
+.chleg i{width:9px;height:9px;border-radius:3px;display:block;flex:none}
+.chvazio{padding:22px 6px;text-align:center;font-size:12px;color:var(--text-3)}
+.conf-split{display:grid;grid-template-columns:1.15fr .85fr;gap:6px 22px;align-items:start}
+@media (max-width:860px){ .conf-split{grid-template-columns:1fr} }
+.conf-split #ins-falhas{min-width:0}
+
+.falhas-head{margin:0 0 8px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-2)}
+.falhas-head.ok{color:var(--green);text-transform:none;letter-spacing:0;font-size:12px;font-weight:500}
+.falha{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12.5px;color:var(--text-2);border-top:.5px solid var(--sep)}
+.falha i{width:8px;height:8px;border-radius:50%;flex:none}
+.falha b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;flex:none;min-width:44px}
+.falha span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.falha span b{display:inline;min-width:0}
+.instable .nmw{cursor:pointer}
+.instable .nmw:hover b{color:var(--blue)}
+
+/* ── Card individual ── */
+#pins-scrim{
+  position:fixed;inset:0;z-index:214;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);padding:3vh 2vw;
+}
+#pins-scrim.on{display:flex;animation:fadein .25s ease}
+#pins-sheet{width:min(560px,94vw);max-height:92vh;border-radius:26px;overflow-y:auto;padding:0 0 20px}
+html.tv #pins-sheet{zoom:clamp(1,.115vh,2.2)}
+#pins-head{
+  position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:12px;padding:18px 20px 14px;
+  background:var(--surface);border-bottom:1px solid var(--sep);
+}
+#pins-head .av{position:relative;width:46px;height:46px;border-radius:50%;overflow:hidden;background:var(--fill-2);flex:none}
+#pins-head .av img{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;display:block}
+#pins-head .av .ini{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:var(--text-2)}
+#pins-head h3{margin:0;font-size:18px;font-weight:700;letter-spacing:-.024em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pins-sub{font-size:13px;color:var(--text-2);margin-top:1px}
+#pins-head .x{margin-left:auto;width:32px;height:32px;border-radius:50%;background:var(--fill);color:var(--text-2);display:flex;align-items:center;justify-content:center;font-size:15px;flex:none}
+#pins-head .x:hover{background:var(--fill-2);color:var(--text)}
+#pins-body{padding:16px 20px 0}
+
+.pins-hero{display:flex;align-items:center;gap:16px;background:var(--fill);border-radius:16px;padding:14px 16px;margin-bottom:14px}
+.pins-gauge{position:relative;width:128px;flex:none}
+.pins-gv{
+  position:absolute;left:0;right:0;bottom:2px;text-align:center;
+  font-size:23px;font-weight:700;letter-spacing:-.03em;color:var(--text);line-height:1;
+}
+.pins-gv i{font-style:normal;font-size:13px;font-weight:600;color:var(--text-2);margin-left:1px}
+.pins-heroTxt{min-width:0}
+.pins-heroK{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-2)}
+.pins-heroB{font-size:19px;font-weight:700;letter-spacing:-.02em;margin:2px 0 6px}
+.pins-heroTxt p{margin:0;font-size:11.5px;line-height:1.4;color:var(--text-2)}
+@media (max-width:460px){ .pins-hero{flex-direction:column;align-items:stretch;text-align:center} .pins-gauge{margin:0 auto} }
+
+.pins-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.pins-stats>div{background:var(--fill);border-radius:14px;padding:11px 8px;text-align:center}
+.pins-stats .v{font-size:20px;font-weight:700;color:var(--blue);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.pins-stats .k{font-size:10.5px;color:var(--text-2);margin-top:2px}
+
+.pins-falhas{margin-top:4px}
+.pins-falhas .falhas-head{margin-top:14px}
+.pins-paises{display:flex;flex-wrap:wrap;gap:7px}
+.paischip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;background:var(--fill-2);color:var(--text-2);padding:4px 10px;border-radius:99px}
+
 @media (prefers-reduced-motion:reduce){ *,*::before,*::after{animation:none!important;transition:none!important} }
 </style>
 </head>
@@ -1110,12 +1196,49 @@ html.tv #ins-sheet{zoom:clamp(1,.115vh,2.2)}
     </div>
     <div id="ins-body">
       <div class="ins-mini" id="ins-mini"></div>
+
+      <div class="ins-charts">
+        <div class="chartcard">
+          <h4>Taxa de esforço por comercial</h4>
+          <div class="cap">Média ponderada dos dias úteis registados · 0–100</div>
+          <div id="ch-esforco"></div>
+        </div>
+        <div class="chartcard">
+          <h4>Distribuição de dias</h4>
+          <div class="cap">Dias registados por tipo de local</div>
+          <div id="ch-dias"></div>
+        </div>
+      </div>
+
+      <div class="chartcard" style="margin-bottom:16px">
+        <h4>Planeamento vs registo diário</h4>
+        <div class="cap">Cruza o "Planeamento de vários dias" com o "Local de trabalho", dia a dia (só dias já passados)</div>
+        <div class="conf-split">
+          <div id="ch-conf"></div>
+          <div id="ins-falhas"></div>
+        </div>
+      </div>
+
       <div class="ins-tablewrap"><table class="instable" id="ins-table"></table></div>
-      <div id="ins-note">Esforço realizado, a partir dos registos diários de cada comercial. Km's percorridos: estimativa em linha reta (ida e volta) entre Aveiro e o país de destino de cada viagem registada.</div>
+      <div id="ins-note">Esforço realizado, a partir dos registos diários de cada comercial. Clique no nome ou na foto para abrir o card individual. Km's percorridos: estimativa em linha reta (ida e volta) entre Aveiro e o país de destino de cada viagem registada.</div>
     </div>
     <div id="ins-foot">
       <button class="cta" onclick="exportInsightsExcel()"><svg class="ico"><use href="#i-download"/></svg>Exportar para Excel</button>
     </div>
+  </div>
+</div>
+
+<div id="pins-scrim" onclick="if(event.target===this)closePersonInsights()">
+  <div id="pins-sheet" class="glass" role="dialog" aria-modal="true" aria-label="Insights individuais">
+    <div id="pins-head">
+      <div class="av" id="pins-av"></div>
+      <div style="min-width:0">
+        <h3 id="pins-nome">—</h3>
+        <div id="pins-sub"></div>
+      </div>
+      <button class="x" onclick="closePersonInsights()" aria-label="Fechar"><svg class="ico"><use href="#i-x"/></svg></button>
+    </div>
+    <div id="pins-body"></div>
   </div>
 </div>
 
@@ -1687,7 +1810,7 @@ addEventListener('resize',()=>{
     if(want !== MODE) applyMode(want);     // ex.: tablet a rodar entre retrato e paisagem
   }, 250);
 });
-addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeRegModal(); closePlanModal(); closeMapModal(); closePersonCal(); closeInsights(); closeInsightsGate(); } });
+addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeRegModal(); closePlanModal(); closeMapModal(); closePersonCal(); closePersonInsights(); closeInsights(); closeInsightsGate(); } });
 addEventListener('orientationchange',()=>setTimeout(()=>dispatchEvent(new Event('resize')),300));
 
 /* ═══ Google Sheets ═══ */
@@ -2425,8 +2548,18 @@ function renderPersonCal(){
    Esforço realizado (não planeado): dias por local a partir dos registos
    diários (`logs`) e das visitas inversas recebidas (`visitas`). Os km's
    somam, por cada viagem (dias consecutivos no mesmo país), a distância
-   em linha reta Aveiro↔país, ida e volta. */
+   em linha reta Aveiro↔país, ida e volta.
+   A conformidade cruza o "Planeamento de vários dias" (`planos`+`visitas`)
+   com o "Local de trabalho" (`logs`), dia a dia, para expor as falhas. */
 const KM_BASE = FABRICA;   // Somengil, Aveiro — ponto de partida de todas as viagens
+
+/* Peso de cada dia útil na taxa de esforço. Um dia só conta uma vez: o peso
+   é o do estado registado nesse dia (uma visita recebida promove o dia).
+   Férias ficam de fora — não são esforço nem penalizam quem as goza. */
+const PESOS_ESFORCO = {viagem:1, visitas:.7, fabrica:.5, home:.3};
+const BANDAS_ESFORCO = [[70,'Elevado'],[45,'Moderado'],[0,'Baixo']];
+const bandaEsforco = t=>(BANDAS_ESFORCO.find(b=>t>=b[0])||BANDAS_ESFORCO[2])[1];
+
 function haversineKm(lat1,lng1,lat2,lng2){
   const R=6371, toRad=d=>d*Math.PI/180;
   const dLat=toRad(lat2-lat1), dLng=toRad(lng2-lng1);
@@ -2441,11 +2574,65 @@ function somarViagem(l,bloco){
   if(c) l.km += haversineKm(KM_BASE[0],KM_BASE[1],c[0],c[1])*2;
 }
 
+function linhaVazia(){
+  return {
+    fabrica:new Set(), home:new Set(), viagem:new Set(), ferias:new Set(), visitas:new Set(),
+    paises:new Set(), km:0, viagens:0,
+    conforme:[], divergente:[], semPlano:[], semRegisto:[]
+  };
+}
+
+/** 0–100: quão exigentes foram os dias úteis registados (férias excluídas). */
+function taxaEsforco(d){
+  const dias = new Set([...d.fabrica,...d.home,...d.viagem]);
+  if(!dias.size) return null;
+  let soma=0;
+  dias.forEach(dia=>{
+    const peso = d.viagem.has(dia) ? PESOS_ESFORCO.viagem
+               : d.visitas.has(dia) ? PESOS_ESFORCO.visitas
+               : d.fabrica.has(dia) ? PESOS_ESFORCO.fabrica
+               : PESOS_ESFORCO.home;
+    soma += peso;
+  });
+  return Math.round(soma/dias.size*100);
+}
+const diasUteis = d=>new Set([...d.fabrica,...d.home,...d.viagem]).size;
+
+/** Dias planeados por pessoa. O "Planeamento de vários dias" manda no local
+    do dia; uma visita inversa só define o dia quando não há outro plano —
+    receber alguém não é um local de trabalho, acontece na fábrica. */
+function mapaPlaneado(periodo,mesAtual){
+  const porPessoa=new Map();
+  const juntar=(id,dia,status,forcar)=>{
+    if(!porPessoa.has(id)) porPessoa.set(id,new Map());
+    const mp=porPessoa.get(id);
+    if(forcar || !mp.has(dia)) mp.set(dia,status);
+  };
+  (planos||[]).forEach(r=>{
+    const m=acharMembro(r.memberName); if(!m) return;
+    const dia=diaISO(r.dia); if(!dia) return;
+    if(periodo==='mes' && !dia.startsWith(mesAtual)) return;
+    const k=chaveLocal(r.statusLabel); if(!k) return;
+    juntar(m.id,dia,k,true);
+  });
+  (visitas||[]).forEach(r=>{
+    const m=acharMembro(r.memberName); if(!m) return;
+    const dia=diaISO(r.dia); if(!dia) return;
+    if(periodo==='mes' && !dia.startsWith(mesAtual)) return;
+    juntar(m.id,dia,'visitas',false);
+  });
+  return porPessoa;
+}
+
+/** Uma visita inversa planeada é recebida na fábrica: o check-in "Na fábrica"
+    nesse dia cumpre o planeado. */
+const cumprePlano = (prev,obs)=> prev===obs || (prev==='visitas' && obs==='fabrica');
+
 function buildInsights(periodo){
-  const mesAtual = isoHoje().slice(0,7);
+  const hoje = isoHoje(), mesAtual = hoje.slice(0,7);
   const linhas = new Map();
   const linha = id=>{
-    if(!linhas.has(id)) linhas.set(id,{fabrica:new Set(),home:new Set(),viagem:new Set(),ferias:new Set(),visitas:new Set(),paises:new Set(),km:0,viagens:0});
+    if(!linhas.has(id)) linhas.set(id,linhaVazia());
     return linhas.get(id);
   };
 
@@ -2485,13 +2672,180 @@ function buildInsights(periodo){
     if(bloco) somarViagem(l,bloco);
   });
 
+  // ── planeamento vs registo diário, dia a dia (só dias já passados) ──
+  const planeado = mapaPlaneado(periodo,mesAtual);
+  const real = new Map();          // id -> Map(dia -> status registado)
+  porDia.forEach(r=>{
+    if(!real.has(r.id)) real.set(r.id,new Map());
+    real.get(r.id).set(r.dia,r.status);
+  });
+  const ids = new Set([...planeado.keys(), ...real.keys()]);
+  ids.forEach(id=>{
+    const l=linha(id);
+    const p=planeado.get(id)||new Map(), a=real.get(id)||new Map();
+    const dias=[...new Set([...p.keys(),...a.keys()])].filter(d=>d<=hoje).sort();
+    dias.forEach(dia=>{
+      const prev=p.get(dia), obs=a.get(dia);
+      if(prev && obs){ (cumprePlano(prev,obs) ? l.conforme : l.divergente).push({dia,prev,obs}); }
+      else if(obs){ l.semPlano.push({dia,obs}); }
+      else { l.semRegisto.push({dia,prev}); }
+    });
+  });
+
   return linhas;
 }
 
+/** Dias por tipo, mês a mês (histórico completo) — para o gráfico individual. */
+function serieMensal(id,nMeses){
+  const serie=new Map();
+  const chave=d=>d.slice(0,7);
+  const ref=new Date();
+  for(let i=nMeses-1;i>=0;i--){
+    const d=new Date(ref.getFullYear(),ref.getMonth()-i,1);
+    serie.set(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,{fabrica:0,home:0,viagem:0,ferias:0,vistos:new Set()});
+  }
+  const porDia=new Map();
+  logs.forEach(row=>{
+    const m=acharMembro(row.memberName); if(!m || m.id!==id) return;
+    const dia=String(row.time).split(' ')[0];
+    const k=dia+'';
+    const atual=porDia.get(k);
+    if(!atual || row.time>atual.time) porDia.set(k,{dia,status:row.status,time:row.time});
+  });
+  porDia.forEach(r=>{
+    const mes=chave(r.dia), alvo=serie.get(mes);
+    if(alvo && alvo[r.status]!==undefined) alvo[r.status]++;
+  });
+  return [...serie.entries()].map(([mes,v])=>({mes,...v}));
+}
+
+/* ═══ Gráficos (SVG inline, sem dependências) ═══ */
+const SERIES_DIAS = [
+  {k:'fabrica', nome:'Na fábrica',  cor:'var(--ch-fab)'},
+  {k:'home',    nome:'Home office', cor:'var(--ch-home)'},
+  {k:'viagem',  nome:'Em viagem',   cor:'var(--ch-via)'},
+  {k:'ferias',  nome:'Férias',      cor:'var(--ch-fer)'},
+  {k:'visitas', nome:'Visitas',     cor:'var(--ch-vis)'}
+];
+/* Ordem e matizes validados para daltonismo: verde↔laranja não se distinguem
+   em deuteranopia, por isso a divergência é azul e não laranja. */
+const SERIES_CONF = [
+  {k:'conforme',   nome:'Conforme',          cor:'var(--ch-ok)'},
+  {k:'divergente', nome:'Divergente',        cor:'var(--ch-div)'},
+  {k:'semPlano',   nome:'Registo sem plano', cor:'var(--ch-falta)'},
+  {k:'semRegisto', nome:'Plano sem registo', cor:'var(--ch-nreg)'}
+];
+
+/** Coluna vertical: topo arredondado (4px), base quadrada. */
+function colunaPath(x,y,w,h,r){
+  if(h<=0) return '';
+  r=Math.max(0,Math.min(r,w/2,h));
+  return `M${x},${y+h} V${y+r} A${r},${r} 0 0 1 ${x+r},${y} H${x+w-r} A${r},${r} 0 0 1 ${x+w},${y+r} V${y+h} Z`;
+}
+
+/** Barra horizontal com base quadrada e ponta arredondada (4px). */
+function barraPath(x,y,w,h,r){
+  if(w<=0) return '';
+  r=Math.max(0,Math.min(r,w,h/2));
+  return `M${x},${y} H${x+w-r} A${r},${r} 0 0 1 ${x+w},${y+r} V${y+h-r} A${r},${r} 0 0 1 ${x+w-r},${y+h} H${x} Z`;
+}
+const legendaHtml = series=>`<div class="chleg">${series.map(s=>
+  `<span><i style="background:${s.cor}"></i>${esc(s.nome)}</span>`).join('')}</div>`;
+
+/** Barras horizontais, uma série (matiz único) — comparação de magnitude. */
+function svgBarras(itens,{sufixo='',largura=340}={}){
+  if(!itens.length) return `<div class="chvazio">Sem dados no período.</div>`;
+  const linhaAlt=24, barraAlt=13, esqLbl=96, dirVal=42;
+  const alt=itens.length*linhaAlt+6;
+  const x0=esqLbl, x1=largura-dirVal, max=Math.max(...itens.map(i=>i.valor),1);
+  const corpo=itens.map((it,i)=>{
+    const y=i*linhaAlt+3, w=Math.max(0,(it.valor/max)*(x1-x0));
+    return `<g><title>${esc(it.nome)}: ${it.valor}${sufixo}</title>
+      <text class="chlbl" x="${esqLbl-8}" y="${y+barraAlt-2}" text-anchor="end">${esc(it.curto||it.nome)}</text>
+      <rect x="${x0}" y="${y}" width="${x1-x0}" height="${barraAlt}" rx="3" style="fill:var(--ch-track)"></rect>
+      <path d="${barraPath(x0,y,w,barraAlt,4)}" style="fill:${it.cor||'var(--ch-home)'}"></path>
+      <text class="chval" x="${x1+6}" y="${y+barraAlt-2}">${it.valor}${sufixo}</text></g>`;
+  }).join('');
+  return `<svg class="chartsvg" viewBox="0 0 ${largura} ${alt}" role="img" aria-label="Gráfico de barras">${corpo}</svg>`;
+}
+
+/** Barras horizontais empilhadas (parte-de-um-todo) com folga de 2px. */
+function svgEmpilhado(itens,series,{largura=340,escalaComum=false}={}){
+  if(!itens.length) return `<div class="chvazio">Sem dados no período.</div>`;
+  const linhaAlt=24, barraAlt=13, esqLbl=96, dirVal=42, folga=2;
+  const alt=itens.length*linhaAlt+6;
+  const x0=esqLbl, x1=largura-dirVal;
+  const totalDe=it=>series.reduce((s,se)=>s+(it[se.k]||0),0);
+  const maxTotal=Math.max(...itens.map(totalDe),1);
+  const corpo=itens.map((it,i)=>{
+    const y=i*linhaAlt+3, total=totalDe(it);
+    const base=escalaComum?maxTotal:(total||1);
+    const usaveis=series.filter(se=>(it[se.k]||0)>0);
+    let x=x0, segs='';
+    usaveis.forEach((se,j)=>{
+      const larg=((it[se.k]||0)/base)*(x1-x0);
+      const util=Math.max(0,larg-(j<usaveis.length-1?folga:0));
+      const ultimo=j===usaveis.length-1;
+      segs+=`<g><title>${esc(it.nome)} · ${esc(se.nome)}: ${it[se.k]}</title>`
+        + (ultimo ? `<path d="${barraPath(x,y,util,barraAlt,4)}" style="fill:${se.cor}"></path>`
+                  : `<rect x="${x}" y="${y}" width="${util}" height="${barraAlt}" style="fill:${se.cor}"></rect>`)
+        + `</g>`;
+      x+=larg;
+    });
+    if(!usaveis.length) segs=`<rect x="${x0}" y="${y}" width="${x1-x0}" height="${barraAlt}" rx="3" style="fill:var(--ch-track)"></rect>`;
+    return `<g><text class="chlbl" x="${esqLbl-8}" y="${y+barraAlt-2}" text-anchor="end">${esc(it.curto||it.nome)}</text>
+      ${segs}<text class="chval" x="${x1+6}" y="${y+barraAlt-2}">${total}</text></g>`;
+  }).join('');
+  return `<svg class="chartsvg" viewBox="0 0 ${largura} ${alt}" role="img" aria-label="Gráfico de barras empilhadas">${corpo}</svg>`;
+}
+
+/** Colunas por mês (tendência) — série única. */
+function svgColunas(serie,chave,{largura=320,altura=110}={}){
+  if(!serie.length) return `<div class="chvazio">Sem histórico.</div>`;
+  const baixo=22, topo=20, larguraCol=Math.min(24,(largura-8)/serie.length-8);
+  const max=Math.max(...serie.map(s=>s[chave]||0),1);
+  const passo=(largura-8)/serie.length;
+  const y0=altura-baixo;
+  const corpo=serie.map((s,i)=>{
+    const v=s[chave]||0;
+    const h=v?Math.max(3,(v/max)*(y0-topo)):0;
+    const x=4+i*passo+(passo-larguraCol)/2;
+    const rot=s.mes.slice(5)+'/'+s.mes.slice(2,4);
+    return `<g><title>${rot}: ${v} dias</title>
+      <path d="${colunaPath(x,y0-h,larguraCol,h,4)}" style="fill:var(--ch-via)"></path>
+      ${v?`<text class="chval" x="${x+larguraCol/2}" y="${y0-h-4}" text-anchor="middle">${v}</text>`:''}
+      <text class="chlbl" x="${x+larguraCol/2}" y="${altura-6}" text-anchor="middle">${rot}</text></g>`;
+  }).join('');
+  return `<svg class="chartsvg" viewBox="0 0 ${largura} ${altura}" role="img" aria-label="Dias em viagem por mês">
+    <line x1="4" y1="${y0}" x2="${largura-4}" y2="${y0}" style="stroke:var(--ch-grid);stroke-width:1"></line>${corpo}</svg>`;
+}
+
+/** Medidor de arco para a taxa de esforço (rácio contra um limite). */
+function svgMedidor(valor){
+  const R=50, cx=64, cy=62, arco=Math.PI*R;   // meia-volta
+  const pct=Math.max(0,Math.min(100,valor||0));
+  const p=(x,y)=>`${x},${y}`;
+  const caminho=`M${p(cx-R,cy)} A${R},${R} 0 0 1 ${p(cx+R,cy)}`;
+  return `<svg class="chartsvg" viewBox="0 0 128 72" role="img" aria-label="Taxa de esforço ${pct}%">
+    <path d="${caminho}" fill="none" style="stroke:var(--ch-track)" stroke-width="11" stroke-linecap="round"></path>
+    <path d="${caminho}" fill="none" style="stroke:var(--ch-home)" stroke-width="11" stroke-linecap="round"
+      stroke-dasharray="${arco}" stroke-dashoffset="${arco*(1-pct/100)}"></path>
+  </svg>`;
+}
+
+/* ═══ Painel da equipa ═══ */
 let insPeriodo='mes';
 function setInsPeriod(p){ insPeriodo=p; renderInsights(); }
 
-function linhaVazia(){ return {fabrica:new Set(),home:new Set(),viagem:new Set(),ferias:new Set(),visitas:new Set(),paises:new Set(),km:0,viagens:0}; }
+const nomeCurtoLbl = n=>{ const s=shortName(n); return s.length>14 ? s.slice(0,13)+'…' : s; };
+const pct = (a,b)=>b?Math.round(a/b*100):null;
+
+/** Desenha o gráfico à largura real do contentor: com o viewBox esticado o
+    texto cresceria com a caixa. `gerar(largura)` devolve o SVG. */
+function pintarGrafico(id,gerar){
+  const el=document.getElementById(id); if(!el) return;
+  el.innerHTML=gerar(Math.max(260,Math.round(el.clientWidth||340)));
+}
 
 function renderInsights(){
   document.getElementById('ins-tab-mes').classList.toggle('on',insPeriodo==='mes');
@@ -2499,14 +2853,32 @@ function renderInsights(){
 
   const dados=buildInsights(insPeriodo);
   const ordenado=members.slice().sort((a,b)=>a.name.localeCompare(b.name,'pt'));
-  const tot={fabrica:0,home:0,viagem:0,ferias:0,visitas:0,viagens:0,km:0};
+  const tot={fabrica:0,home:0,viagem:0,ferias:0,visitas:0,viagens:0,km:0,
+             conforme:0,divergente:0,semPlano:0,semRegisto:0,pesoSoma:0,pesoDias:0};
 
-  const linhasHtml=ordenado.map(m=>{
+  const fila=ordenado.map(m=>{
     const d=dados.get(m.id)||linhaVazia();
+    const t=taxaEsforco(d), uteis=diasUteis(d);
     tot.fabrica+=d.fabrica.size; tot.home+=d.home.size; tot.viagem+=d.viagem.size;
     tot.ferias+=d.ferias.size; tot.visitas+=d.visitas.size; tot.viagens+=d.viagens; tot.km+=d.km;
-    return `<tr>
-      <td><span class="nmw">${avatarHtml(m,'av-mini')}<b>${esc(shortName(m.name))}</b></span></td>
+    tot.conforme+=d.conforme.length; tot.divergente+=d.divergente.length;
+    tot.semPlano+=d.semPlano.length; tot.semRegisto+=d.semRegisto.length;
+    if(t!==null){ tot.pesoSoma+=t*uteis; tot.pesoDias+=uteis; }
+    return {m,d,taxa:t,uteis};
+  });
+
+  // ── tabela (vista de tabela: todos os valores sem depender de cor) ──
+  document.getElementById('ins-table').innerHTML = `
+    <thead><tr>
+      <th>Comercial</th><th>Esforço</th><th>Fábrica</th><th>Home office</th><th>Fora (viagem)</th><th>Férias</th>
+      <th>Visitas recebidas</th><th>Nº viagens</th><th>Países</th><th>Km percorridos</th>
+      <th>Sem plano</th><th>Divergente</th><th>Sem registo</th>
+    </tr></thead>
+    <tbody>${fila.map(({m,d,taxa})=>`<tr>
+      <td><span class="nmw" role="button" tabindex="0" title="Ver insights individuais"
+            onclick="openPersonInsights(${m.id})" onkeydown="if(event.key==='Enter')openPersonInsights(${m.id})"
+          >${avatarHtml(m,'av-mini')}<b>${esc(shortName(m.name))}</b></span></td>
+      <td>${taxa===null?'—':taxa+'%'}</td>
       <td>${d.fabrica.size}</td>
       <td>${d.home.size}</td>
       <td>${d.viagem.size}</td>
@@ -2515,28 +2887,180 @@ function renderInsights(){
       <td>${d.viagens}</td>
       <td>${d.paises.size}</td>
       <td>${Math.round(d.km).toLocaleString('pt-PT')}</td>
-    </tr>`;
-  }).join('');
-
-  document.getElementById('ins-table').innerHTML = `
-    <thead><tr>
-      <th>Comercial</th><th>Fábrica</th><th>Home office</th><th>Fora (viagem)</th><th>Férias</th><th>Visitas recebidas</th><th>Nº viagens</th><th>Países</th><th>Km percorridos</th>
-    </tr></thead>
-    <tbody>${linhasHtml || '<tr><td colspan="9" class="ins-vazio">Sem registos neste período.</td></tr>'}</tbody>
+      <td>${d.semPlano.length}</td>
+      <td>${d.divergente.length}</td>
+      <td>${d.semRegisto.length}</td>
+    </tr>`).join('') || '<tr><td colspan="13" class="ins-vazio">Sem registos neste período.</td></tr>'}</tbody>
     <tfoot><tr>
-      <td>Equipa · total</td><td>${tot.fabrica}</td><td>${tot.home}</td><td>${tot.viagem}</td><td>${tot.ferias}</td><td>${tot.visitas}</td><td>${tot.viagens}</td><td>—</td><td>${Math.round(tot.km).toLocaleString('pt-PT')}</td>
+      <td>Equipa · total</td>
+      <td>${tot.pesoDias?Math.round(tot.pesoSoma/tot.pesoDias)+'%':'—'}</td>
+      <td>${tot.fabrica}</td><td>${tot.home}</td><td>${tot.viagem}</td><td>${tot.ferias}</td>
+      <td>${tot.visitas}</td><td>${tot.viagens}</td><td>—</td><td>${Math.round(tot.km).toLocaleString('pt-PT')}</td>
+      <td>${tot.semPlano}</td><td>${tot.divergente}</td><td>${tot.semRegisto}</td>
     </tr></tfoot>`;
 
+  // ── KPIs ──
+  const taxaMedia = tot.pesoDias ? Math.round(tot.pesoSoma/tot.pesoDias) : null;
+  const registados = tot.conforme+tot.divergente+tot.semPlano;
+  const cobertura = pct(tot.conforme+tot.divergente, registados);
   document.getElementById('ins-mini').innerHTML = `
+    <div><div class="v">${taxaMedia===null?'—':taxaMedia+'%'}</div><div class="k">taxa de esforço média</div></div>
     <div><div class="v">${tot.viagem}</div><div class="k">dias fora</div></div>
     <div><div class="v">${Math.round(tot.km).toLocaleString('pt-PT')}</div><div class="k">km percorridos</div></div>
     <div><div class="v">${tot.viagens}</div><div class="k">viagens</div></div>
-    <div><div class="v">${tot.fabrica}</div><div class="k">dias na fábrica</div></div>
-    <div><div class="v">${tot.home}</div><div class="k">dias home office</div></div>`;
+    <div><div class="v">${cobertura===null?'—':cobertura+'%'}</div><div class="k">dias registados com plano</div></div>`;
 
-  window.__insDados={ordenado,dados,periodo:insPeriodo};
+  // ── gráfico 1: taxa de esforço (série única, ordenada) ──
+  const itensEsforco = fila.filter(f=>f.taxa!==null)
+    .sort((a,b)=>b.taxa-a.taxa)
+    .map(f=>({nome:shortName(f.m.name), curto:nomeCurtoLbl(f.m.name), valor:f.taxa}));
+  pintarGrafico('ch-esforco', w => svgBarras(itensEsforco,{sufixo:'%',largura:w}) +
+    `<div class="chleg"><span>Viagem 100% · Visita recebida 70% · Fábrica 50% · Home office 30% · Férias não contam</span></div>`);
+
+  // ── gráfico 2: distribuição de dias (categórico, empilhado) ──
+  const itensDias = fila
+    .map(f=>({nome:shortName(f.m.name), curto:nomeCurtoLbl(f.m.name),
+              fabrica:f.d.fabrica.size, home:f.d.home.size, viagem:f.d.viagem.size,
+              ferias:f.d.ferias.size, visitas:f.d.visitas.size}))
+    .filter(i=>SERIES_DIAS.some(s=>i[s.k]>0))
+    .sort((a,b)=>(b.viagem-a.viagem)||(b.fabrica+b.home-a.fabrica-a.home));
+  pintarGrafico('ch-dias', w => svgEmpilhado(itensDias,SERIES_DIAS,{escalaComum:true,largura:w}) + legendaHtml(SERIES_DIAS));
+
+  // ── gráfico 3: planeamento vs registo diário ──
+  const itensConf = fila
+    .map(f=>({nome:shortName(f.m.name), curto:nomeCurtoLbl(f.m.name),
+              conforme:f.d.conforme.length, divergente:f.d.divergente.length,
+              semPlano:f.d.semPlano.length, semRegisto:f.d.semRegisto.length}))
+    .filter(i=>SERIES_CONF.some(s=>i[s.k]>0))
+    .sort((a,b)=>(b.semPlano+b.divergente+b.semRegisto)-(a.semPlano+a.divergente+a.semRegisto));
+  pintarGrafico('ch-conf', w => svgEmpilhado(itensConf,SERIES_CONF,{escalaComum:true,largura:w}) + legendaHtml(SERIES_CONF));
+
+  // ── falhas concretas, as mais recentes primeiro ──
+  const falhas=[];
+  fila.forEach(({m,d})=>{
+    d.semPlano.forEach(f=>falhas.push({dia:f.dia,nome:shortName(m.name),tipo:'semPlano',
+      txt:`registou <b>${STATUS[f.obs]?STATUS[f.obs].short:f.obs}</b> sem planeamento`}));
+    d.divergente.forEach(f=>falhas.push({dia:f.dia,nome:shortName(m.name),tipo:'divergente',
+      txt:`planeou <b>${STATUS[f.prev]?STATUS[f.prev].short:f.prev}</b> e registou <b>${STATUS[f.obs]?STATUS[f.obs].short:f.obs}</b>`}));
+    d.semRegisto.forEach(f=>falhas.push({dia:f.dia,nome:shortName(m.name),tipo:'semRegisto',
+      txt:`planeou <b>${STATUS[f.prev]?STATUS[f.prev].short:f.prev}</b> e não registou o dia`}));
+  });
+  falhas.sort((a,b)=>b.dia.localeCompare(a.dia));
+  const corFalha={semPlano:'var(--ch-falta)',divergente:'var(--ch-div)',semRegisto:'var(--ch-nreg)'};
+  document.getElementById('ins-falhas').innerHTML = falhas.length ? `
+    <div class="falhas-head">${falhas.length} ${falhas.length===1?'falha':'falhas'} de conformidade${falhas.length>10?' · 10 mais recentes':''}</div>
+    ${falhas.slice(0,10).map(f=>`<div class="falha">
+      <i style="background:${corFalha[f.tipo]}"></i>
+      <b>${ddmm(f.dia)}</b><span>${esc(f.nome)} ${f.txt}</span></div>`).join('')}`
+    : `<div class="falhas-head ok">Sem falhas: todos os dias registados têm planeamento correspondente.</div>`;
+
+  window.__insDados={fila,tot,periodo:insPeriodo};
 }
 
+/* ═══ Card individual ═══ */
+function openPersonInsights(id){
+  const m=members.find(x=>x.id===id); if(!m) return;
+  const d=buildInsights(insPeriodo).get(id)||linhaVazia();
+  const taxa=taxaEsforco(d), uteis=diasUteis(d);
+  const periodoTxt = insPeriodo==='mes' ? 'Este mês' : 'Total acumulado';
+
+  document.getElementById('pins-av').innerHTML =
+    `<span class="ini">${initials(m.name)}</span>${m.photo?`<img src="${esc(m.photo)}" alt="" onerror="this.remove()">`:''}`;
+  document.getElementById('pins-nome').textContent = shortName(m.name);
+  document.getElementById('pins-sub').textContent =
+    `${periodoTxt} · ${uteis} ${uteis===1?'dia útil registado':'dias úteis registados'}`;
+
+  const paises=[...d.paises].sort((a,b)=>a.localeCompare(b,'pt'));
+  const registados=d.conforme.length+d.divergente.length+d.semPlano.length;
+  const cobertura=pct(d.conforme.length+d.divergente.length,registados);
+
+  document.getElementById('pins-body').innerHTML = `
+    <div class="pins-hero">
+      <div class="pins-gauge">
+        ${svgMedidor(taxa)}
+        <div class="pins-gv">${taxa===null?'—':taxa+'<i>%</i>'}</div>
+      </div>
+      <div class="pins-heroTxt">
+        <div class="pins-heroK">Taxa de esforço</div>
+        <div class="pins-heroB">${taxa===null?'Sem dias registados':esc(bandaEsforco(taxa))}</div>
+        <p>Média ponderada dos dias úteis registados: viagem 100%, visita recebida 70%,
+           fábrica 50%, home office 30%. Férias não entram no cálculo.</p>
+      </div>
+    </div>
+
+    <div class="pins-stats">
+      <div><div class="v">${d.viagem.size}</div><div class="k">dias fora</div></div>
+      <div><div class="v">${Math.round(d.km).toLocaleString('pt-PT')}</div><div class="k">km percorridos</div></div>
+      <div><div class="v">${d.viagens}</div><div class="k">viagens</div></div>
+      <div><div class="v">${d.paises.size}</div><div class="k">países</div></div>
+      <div><div class="v">${d.visitas.size}</div><div class="k">visitas recebidas</div></div>
+      <div><div class="v">${d.ferias.size}</div><div class="k">dias de férias</div></div>
+    </div>
+
+    <div class="chartcard">
+      <h4>Distribuição dos dias</h4>
+      <div class="cap">${periodoTxt}</div>
+      <div id="pc-dist"></div>
+      ${legendaHtml(SERIES_DIAS)}
+    </div>
+
+    <div class="chartcard">
+      <h4>Dias fora por mês</h4>
+      <div class="cap">Últimos 6 meses · histórico completo</div>
+      <div id="pc-mes"></div>
+    </div>
+
+    <div class="chartcard">
+      <h4>Planeamento vs registo diário</h4>
+      <div class="cap">${cobertura===null?'Sem dias avaliados':`${cobertura}% dos dias registados tinham planeamento`}</div>
+      <div id="pc-conf"></div>
+      ${legendaHtml(SERIES_CONF)}
+      <div class="pins-falhas">${listaFalhasPessoa(d)}</div>
+    </div>
+
+    ${paises.length?`<div class="chartcard"><h4>Países visitados</h4>
+      <div class="pins-paises">${paises.map(p=>`<span class="paischip">${bandeiraPais(p)} ${esc(p)}</span>`).join('')}</div></div>`:''}`;
+
+  document.getElementById('pins-scrim').classList.add('on');
+
+  pintarGrafico('pc-dist', w=>svgEmpilhado([{nome:shortName(m.name),curto:'Dias',
+      fabrica:d.fabrica.size,home:d.home.size,viagem:d.viagem.size,
+      ferias:d.ferias.size,visitas:d.visitas.size}],SERIES_DIAS,{largura:w}));
+  pintarGrafico('pc-mes',  w=>svgColunas(serieMensal(id,6),'viagem',{largura:w}));
+  pintarGrafico('pc-conf', w=>svgEmpilhado([{nome:shortName(m.name),curto:'Dias',
+      conforme:d.conforme.length,divergente:d.divergente.length,
+      semPlano:d.semPlano.length,semRegisto:d.semRegisto.length}],SERIES_CONF,{largura:w}));
+  pinsAberto=id;
+}
+let pinsAberto=null;
+function closePersonInsights(){ pinsAberto=null; const el=document.getElementById('pins-scrim'); if(el) el.classList.remove('on'); }
+
+/* os gráficos são desenhados à largura medida: ao mudar o tamanho da janela
+   (ou rodar o telemóvel) voltam a ser pintados. */
+let insResizeT=null;
+addEventListener('resize',()=>{
+  clearTimeout(insResizeT);
+  insResizeT=setTimeout(()=>{
+    if(document.getElementById('ins-scrim').classList.contains('on')) renderInsights();
+    if(pinsAberto!==null) openPersonInsights(pinsAberto);
+  },220);
+});
+
+function listaFalhasPessoa(d){
+  const linhas=[
+    ...d.semPlano.map(f=>({dia:f.dia,cor:'var(--ch-falta)',
+      txt:`registou <b>${STATUS[f.obs]?STATUS[f.obs].short:f.obs}</b> sem planeamento`})),
+    ...d.divergente.map(f=>({dia:f.dia,cor:'var(--ch-div)',
+      txt:`planeou <b>${STATUS[f.prev]?STATUS[f.prev].short:f.prev}</b>, registou <b>${STATUS[f.obs]?STATUS[f.obs].short:f.obs}</b>`})),
+    ...d.semRegisto.map(f=>({dia:f.dia,cor:'var(--ch-nreg)',
+      txt:`planeou <b>${STATUS[f.prev]?STATUS[f.prev].short:f.prev}</b>, sem registo diário`}))
+  ].sort((a,b)=>b.dia.localeCompare(a.dia));
+  if(!linhas.length) return `<div class="falhas-head ok">Sem falhas neste período.</div>`;
+  return `<div class="falhas-head">${linhas.length} ${linhas.length===1?'falha':'falhas'}${linhas.length>12?' · 12 mais recentes':''}</div>`
+    + linhas.slice(0,12).map(l=>`<div class="falha"><i style="background:${l.cor}"></i><b>${ddmm(l.dia)}</b><span>${l.txt}</span></div>`).join('');
+}
+
+/* ═══ Acesso (palavra-passe) ═══ */
 const INSIGHTS_PASS = '2002';
 
 function openInsights(){
@@ -2563,6 +3087,7 @@ function checkInsightsPass(event){
 function openInsightsPanel(){
   document.getElementById('ins-scrim').classList.add('on');
   renderInsights();
+  if(!planos.length)  lerAccao('planeado').then(r=>{ if(r){ planos=r;  renderInsights(); } });
   if(!visitas.length) lerAccao('visitas').then(r=>{ if(r){ visitas=r; renderInsights(); } });
 }
 function closeInsights(){ const el=document.getElementById('ins-scrim'); if(el) el.classList.remove('on'); }
@@ -2570,26 +3095,48 @@ function closeInsights(){ const el=document.getElementById('ins-scrim'); if(el) 
 /** Gera um .xls (tabela HTML reconhecida pelo Excel) — sem dependências externas. */
 function exportInsightsExcel(){
   const info=window.__insDados; if(!info) return;
-  const {ordenado,dados,periodo}=info;
-  const cab=['Comercial','Na fábrica (dias)','Home office (dias)','Fora / viagem (dias)','Férias (dias)','Visitas recebidas (dias)','Nº de viagens','Países visitados','Km percorridos (ida e volta)'];
-  const linhas=ordenado.map(m=>{
-    const d=dados.get(m.id)||linhaVazia();
-    return [m.name, d.fabrica.size, d.home.size, d.viagem.size, d.ferias.size, d.visitas.size, d.viagens, d.paises.size, Math.round(d.km)];
+  const {fila,tot,periodo}=info;
+  const hoje=isoHoje();
+  const titulo=periodo==='mes' ? `Mês de ${hoje.slice(0,7)}` : 'Total acumulado';
+
+  const cab=['Comercial','Taxa de esforço (%)','Dias úteis registados','Na fábrica (dias)','Home office (dias)',
+             'Fora / viagem (dias)','Férias (dias)','Visitas recebidas (dias)','Nº de viagens','Países visitados',
+             'Km percorridos (ida e volta)','Conformes','Divergentes','Registo sem plano','Plano sem registo','Cobertura do plano (%)'];
+  const linhas=fila.map(({m,d,taxa,uteis})=>{
+    const registados=d.conforme.length+d.divergente.length+d.semPlano.length;
+    return [m.name, taxa===null?'':taxa, uteis, d.fabrica.size, d.home.size, d.viagem.size, d.ferias.size,
+            d.visitas.size, d.viagens, d.paises.size, Math.round(d.km),
+            d.conforme.length, d.divergente.length, d.semPlano.length, d.semRegisto.length,
+            registados?Math.round((d.conforme.length+d.divergente.length)/registados*100):''];
   });
-  const totais=linhas.reduce((t,l)=>{ for(let i=1;i<l.length;i++) t[i]=(t[i]||0)+l[i]; return t; },['Equipa · total']);
-  const linhaHtml=arr=>`<tr>${arr.map((v,i)=>`<td>${i===0?esc(v):v}</td>`).join('')}</tr>`;
+  const totais=['Equipa · total', tot.pesoDias?Math.round(tot.pesoSoma/tot.pesoDias):'', '',
+                tot.fabrica, tot.home, tot.viagem, tot.ferias, tot.visitas, tot.viagens, '',
+                Math.round(tot.km), tot.conforme, tot.divergente, tot.semPlano, tot.semRegisto, ''];
+
+  // segundo quadro: cada falha de conformidade, com data
+  const falhas=[];
+  fila.forEach(({m,d})=>{
+    d.semPlano.forEach(f=>falhas.push([m.name,f.dia,'Registo sem plano','',STATUS[f.obs]?STATUS[f.obs].label:f.obs]));
+    d.divergente.forEach(f=>falhas.push([m.name,f.dia,'Divergente',STATUS[f.prev]?STATUS[f.prev].label:f.prev,STATUS[f.obs]?STATUS[f.obs].label:f.obs]));
+    d.semRegisto.forEach(f=>falhas.push([m.name,f.dia,'Plano sem registo',STATUS[f.prev]?STATUS[f.prev].label:f.prev,'']));
+  });
+  falhas.sort((a,b)=>b[1].localeCompare(a[1]));
+
+  const tr=(arr,tag='td')=>`<tr>${arr.map(v=>`<${tag}>${typeof v==='string'?esc(v):v}</${tag}>`).join('')}</tr>`;
   const html=`<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8">
 <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
 <x:Name>Análise</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
 </x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
-</head><body><table border="1">
-<thead>${linhaHtml(cab)}</thead>
-<tbody>${linhas.map(linhaHtml).join('')}</tbody>
-<tfoot>${linhaHtml(totais)}</tfoot>
-</table></body></html>`;
+</head><body>
+<p>BIZDEV Team · Somengil — análise de esforço (${esc(titulo)}, extraído a ${esc(hoje)})</p>
+<table border="1"><thead>${tr(cab,'th')}</thead><tbody>${linhas.map(l=>tr(l)).join('')}</tbody><tfoot>${tr(totais)}</tfoot></table>
+<p>&nbsp;</p>
+<p>Falhas de conformidade — planeamento de vários dias vs registo diário</p>
+<table border="1"><thead>${tr(['Comercial','Dia','Tipo de falha','Planeado','Registado'],'th')}</thead>
+<tbody>${falhas.length?falhas.map(l=>tr(l)).join(''):tr(['—','','Sem falhas no período','',''])}</tbody></table>
+</body></html>`;
   const blob=new Blob(['﻿'+html],{type:'application/vnd.ms-excel;charset=utf-8'});
   const a=document.createElement('a');
-  const hoje=isoHoje();
   a.href=URL.createObjectURL(blob);
   a.download=`analise-comercial-${periodo==='mes'?hoje.slice(0,7):'total'}-${hoje}.xls`;
   document.body.appendChild(a); a.click(); a.remove();
