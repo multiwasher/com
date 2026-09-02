@@ -723,8 +723,13 @@ html.tv #ins-sheet{zoom:clamp(1,.115vh,2.2)}
 #ins-head .x{margin-left:auto;width:32px;height:32px;border-radius:50%;background:var(--fill);color:var(--text-2);display:flex;align-items:center;justify-content:center;font-size:15px;flex:none}
 #ins-head .x:hover{background:var(--fill-2);color:var(--text)}
 .ins-period{display:flex;gap:6px;background:var(--fill);padding:3px;border-radius:99px}
+.ins-period{align-items:center}
 .ins-period .ins-tab{padding:6px 14px;border-radius:99px;font-size:13px;font-weight:600;color:var(--text-2)}
 .ins-period .ins-tab.on{background:var(--blue);color:#fff}
+.ins-period .ins-mes{min-width:126px;text-align:center}
+.ins-period .cal-nav{width:26px;height:26px;background:transparent;font-size:15px;flex:none}
+.ins-period .cal-nav:hover{background:var(--fill-2);color:var(--text)}
+.ins-period .cal-nav[disabled]{opacity:.28;pointer-events:none}
 #ins-body{flex:1;min-height:0;overflow-y:auto;padding:16px 20px 20px}
 #ins-note{font-size:12px;color:var(--text-3);margin:-4px 0 16px}
 #ins-foot{flex:none;padding:14px 20px;border-top:1px solid var(--sep);display:flex;justify-content:flex-end}
@@ -1197,8 +1202,10 @@ html.tv #pins-sheet{zoom:clamp(1,.115vh,2.2)}
       <svg class="ico"><use href="#i-chart"/></svg>
       <h3>Análise da equipa</h3>
       <div class="ins-period">
-        <button class="ins-tab" id="ins-tab-mes" onclick="setInsPeriod('mes')">Este mês</button>
-        <button class="ins-tab" id="ins-tab-total" onclick="setInsPeriod('total')">Total acumulado</button>
+        <button class="cal-nav" id="ins-prev" onclick="insMesNav(-1)" aria-label="Mês anterior">‹</button>
+        <button class="ins-tab ins-mes" id="ins-tab-mes" onclick="insMesHoje()" title="Voltar ao mês atual">—</button>
+        <button class="cal-nav" id="ins-next" onclick="insMesNav(1)" aria-label="Mês seguinte">›</button>
+        <button class="ins-tab" id="ins-tab-total" onclick="setInsTotal()">Total acumulado</button>
       </div>
       <button class="x" onclick="closeInsights()" aria-label="Fechar"><svg class="ico"><use href="#i-x"/></svg></button>
     </div>
@@ -2643,7 +2650,7 @@ const diasUteis = d=>new Set([...d.fabrica,...d.home,...d.viagem]).size;
 /** Dias planeados por pessoa. O "Planeamento de vários dias" manda no local
     do dia; uma visita inversa só define o dia quando não há outro plano —
     receber alguém não é um local de trabalho, acontece na fábrica. */
-function mapaPlaneado(periodo,mesAtual){
+function mapaPlaneado(mes){
   const porPessoa=new Map();
   const juntar=(id,dia,status,forcar)=>{
     if(!porPessoa.has(id)) porPessoa.set(id,new Map());
@@ -2653,14 +2660,14 @@ function mapaPlaneado(periodo,mesAtual){
   (planos||[]).forEach(r=>{
     const m=acharMembro(r.memberName); if(!m) return;
     const dia=diaISO(r.dia); if(!dia) return;
-    if(periodo==='mes' && !dia.startsWith(mesAtual)) return;
+    if(mes && !dia.startsWith(mes)) return;
     const k=chaveLocal(r.statusLabel); if(!k) return;
     juntar(m.id,dia,k,true);
   });
   (visitas||[]).forEach(r=>{
     const m=acharMembro(r.memberName); if(!m) return;
     const dia=diaISO(r.dia); if(!dia) return;
-    if(periodo==='mes' && !dia.startsWith(mesAtual)) return;
+    if(mes && !dia.startsWith(mes)) return;
     juntar(m.id,dia,'visitas',false);
   });
   return porPessoa;
@@ -2674,8 +2681,9 @@ const cumprePlano = (prev,obs)=> prev===obs || (prev==='visitas' && obs==='fabri
    Um dia com registo mas sem plano (ou o contrário) não tem com que comparar:
    fica em "sem comparação", não conta como falha. */
 
-function buildInsights(periodo){
-  const hoje = isoHoje(), mesAtual = hoje.slice(0,7);
+/** `mes` = 'yyyy-mm' para um mês concreto, ou null para o total acumulado. */
+function buildInsights(mes){
+  const hoje = isoHoje();
   const linhas = new Map();
   const linha = id=>{
     if(!linhas.has(id)) linhas.set(id,linhaVazia());
@@ -2687,7 +2695,7 @@ function buildInsights(periodo){
   logs.forEach(row=>{
     const m=acharMembro(row.memberName); if(!m) return;
     const dia=String(row.time).split(' ')[0];
-    if(periodo==='mes' && !dia.startsWith(mesAtual)) return;
+    if(mes && !dia.startsWith(mes)) return;
     const chave=m.id+'|'+dia, atual=porDia.get(chave);
     if(!atual || row.time>atual.time) porDia.set(chave,{id:m.id,dia,status:row.status,obs:row.obs,time:row.time});
   });
@@ -2696,7 +2704,7 @@ function buildInsights(periodo){
   (visitas||[]).forEach(r=>{
     const m=acharMembro(r.memberName); if(!m) return;
     const dia=diaISO(r.dia); if(!dia) return;
-    if(periodo==='mes' && !dia.startsWith(mesAtual)) return;
+    if(mes && !dia.startsWith(mes)) return;
     linha(m.id).visitas.add(dia);
   });
 
@@ -2719,7 +2727,7 @@ function buildInsights(periodo){
   });
 
   // ── planeamento vs registo diário, dia a dia (só dias já passados) ──
-  const planeado = mapaPlaneado(periodo,mesAtual);
+  const planeado = mapaPlaneado(mes);
   const real = new Map();          // id -> Map(dia -> status registado)
   porDia.forEach(r=>{
     if(!real.has(r.id)) real.set(r.id,new Map());
@@ -2742,10 +2750,10 @@ function buildInsights(periodo){
 }
 
 /** Dias por tipo, mês a mês (histórico completo) — para o gráfico individual. */
-function serieMensal(id,nMeses){
+function serieMensal(id,nMeses,mesFim){
   const serie=new Map();
   const chave=d=>d.slice(0,7);
-  const ref=new Date();
+  const ref=mesFim ? new Date(+mesFim.slice(0,4),+mesFim.slice(5,7)-1,1) : new Date();
   for(let i=nMeses-1;i>=0;i--){
     const d=new Date(ref.getFullYear(),ref.getMonth()-i,1);
     serie.set(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,{fabrica:0,home:0,viagem:0,ferias:0,vistos:new Set()});
@@ -2879,8 +2887,39 @@ function svgMedidor(valor){
 }
 
 /* ═══ Painel da equipa ═══ */
-let insPeriodo='mes';
-function setInsPeriod(p){ insPeriodo=p; renderInsights(); }
+/* Período em vista: um mês concreto ('yyyy-mm') ou o total acumulado.
+   `insMes` guarda sempre o mês visitado, mesmo enquanto se vê o total, para
+   as setas retomarem de onde se estava. */
+let insMes = isoHoje().slice(0,7);
+let insTotal = false;
+const mesSeguinte = (m,n)=>{
+  const d=new Date(+m.slice(0,4), +m.slice(5,7)-1+n, 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+};
+const nomeMes = m=>{
+  const t=new Date(+m.slice(0,4), +m.slice(5,7)-1, 1)
+    .toLocaleDateString('pt-PT',{month:'long',year:'numeric'}).replace(' de ',' ');
+  return t.charAt(0).toUpperCase()+t.slice(1);
+};
+/** Mês mais antigo com dados: evita navegar para trás por meses vazios sem fim. */
+function primeiroMesComDados(){
+  let min=null;
+  const ver=m=>{ if(m && (!min || m<min)) min=m; };
+  logs.forEach(r=>ver(String(r.time).slice(0,7)));
+  (planos||[]).forEach(r=>ver(diaISO(r.dia).slice(0,7)));
+  (visitas||[]).forEach(r=>ver(diaISO(r.dia).slice(0,7)));
+  return min || isoHoje().slice(0,7);
+}
+function insMesNav(n){
+  const alvo=mesSeguinte(insMes,n);
+  if(n>0 && alvo>isoHoje().slice(0,7)) return;      // não há esforço realizado no futuro
+  if(n<0 && alvo<primeiroMesComDados()) return;
+  insMes=alvo; insTotal=false; renderInsights();
+}
+function insMesHoje(){ insMes=isoHoje().slice(0,7); insTotal=false; renderInsights(); }
+function setInsTotal(){ insTotal=true; renderInsights(); }
+const periodoEmVista = ()=> insTotal ? null : insMes;
+const periodoTexto = ()=> insTotal ? 'Total acumulado' : nomeMes(insMes);
 
 const nomeCurtoLbl = n=>{ const s=shortName(n); return s.length>14 ? s.slice(0,13)+'…' : s; };
 const pct = (a,b)=>b?Math.round(a/b*100):null;
@@ -2893,10 +2932,13 @@ function pintarGrafico(id,gerar){
 }
 
 function renderInsights(){
-  document.getElementById('ins-tab-mes').classList.toggle('on',insPeriodo==='mes');
-  document.getElementById('ins-tab-total').classList.toggle('on',insPeriodo==='total');
+  document.getElementById('ins-tab-mes').textContent = nomeMes(insMes);
+  document.getElementById('ins-tab-mes').classList.toggle('on',!insTotal);
+  document.getElementById('ins-tab-total').classList.toggle('on',insTotal);
+  document.getElementById('ins-prev').disabled = mesSeguinte(insMes,-1) < primeiroMesComDados();
+  document.getElementById('ins-next').disabled = mesSeguinte(insMes,1)  > isoHoje().slice(0,7);
 
-  const dados=buildInsights(insPeriodo);
+  const dados=buildInsights(periodoEmVista());
   const ordenado=members.slice().sort((a,b)=>a.name.localeCompare(b.name,'pt'));
   const tot={fabrica:0,home:0,viagem:0,ferias:0,visitas:0,viagens:0,km:0,
              conforme:0,divergente:0,soRegisto:0,soPlano:0,pesoSoma:0,pesoDias:0};
@@ -3010,15 +3052,15 @@ function renderInsights(){
     elOrfaos.classList.toggle('on',orfaos.length>0);
   }
 
-  window.__insDados={fila,tot,periodo:insPeriodo};
+  window.__insDados={fila,tot,mes:periodoEmVista(),titulo:periodoTexto()};
 }
 
 /* ═══ Card individual ═══ */
 function openPersonInsights(id){
   const m=members.find(x=>x.id===id); if(!m) return;
-  const d=buildInsights(insPeriodo).get(id)||linhaVazia();
+  const d=buildInsights(periodoEmVista()).get(id)||linhaVazia();
   const taxa=taxaEsforco(d), uteis=diasUteis(d);
-  const periodoTxt = insPeriodo==='mes' ? 'Este mês' : 'Total acumulado';
+  const periodoTxt = periodoTexto();
 
   document.getElementById('pins-av').innerHTML =
     `<span class="ini">${initials(m.name)}</span>${m.photo?`<img src="${esc(m.photo)}" alt="" onerror="this.remove()">`:''}`;
@@ -3062,7 +3104,7 @@ function openPersonInsights(id){
 
     <div class="chartcard">
       <h4>Dias fora por mês</h4>
-      <div class="cap">Últimos 6 meses · histórico completo</div>
+      <div class="cap">6 meses até ${esc(insTotal?nomeMes(isoHoje().slice(0,7)):nomeMes(insMes))} · histórico completo</div>
       <div id="pc-mes"></div>
     </div>
 
@@ -3083,7 +3125,7 @@ function openPersonInsights(id){
   pintarGrafico('pc-dist', w=>svgEmpilhado([{nome:shortName(m.name),curto:'Dias',
       fabrica:d.fabrica.size,home:d.home.size,viagem:d.viagem.size,
       ferias:d.ferias.size,visitas:d.visitas.size}],SERIES_DIAS,{largura:w}));
-  pintarGrafico('pc-mes',  w=>svgColunas(serieMensal(id,6),'viagem',{largura:w}));
+  pintarGrafico('pc-mes',  w=>svgColunas(serieMensal(id,6,insTotal?null:insMes),'viagem',{largura:w}));
   pintarGrafico('pc-conf', w=>svgEmpilhado([{nome:shortName(m.name),curto:'Dias',
       conforme:d.conforme.length,divergente:d.divergente.length,
       semComparacao:d.soRegisto.length+d.soPlano.length}],SERIES_CONF,{largura:w}));
@@ -3139,6 +3181,7 @@ function checkInsightsPass(event){
 }
 
 function openInsightsPanel(){
+  insMes=isoHoje().slice(0,7); insTotal=false;    // abre sempre no mês corrente
   document.getElementById('ins-scrim').classList.add('on');
   renderInsights();
   if(!planos.length)  lerAccao('planeado').then(r=>{ if(r){ planos=r;  renderInsights(); } });
@@ -3149,9 +3192,8 @@ function closeInsights(){ const el=document.getElementById('ins-scrim'); if(el) 
 /** Gera um .xls (tabela HTML reconhecida pelo Excel) — sem dependências externas. */
 function exportInsightsExcel(){
   const info=window.__insDados; if(!info) return;
-  const {fila,tot,periodo}=info;
+  const {fila,tot,mes,titulo}=info;
   const hoje=isoHoje();
-  const titulo=periodo==='mes' ? `Mês de ${hoje.slice(0,7)}` : 'Total acumulado';
 
   const cab=['Comercial','Taxa de esforço (%)','Dias úteis registados','Na fábrica (dias)','Home office (dias)',
              'Fora / viagem (dias)','Férias (dias)','Visitas recebidas (dias)','Nº de viagens','Países visitados',
@@ -3203,7 +3245,7 @@ function exportInsightsExcel(){
   const blob=new Blob(['﻿'+html],{type:'application/vnd.ms-excel;charset=utf-8'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download=`analise-comercial-${periodo==='mes'?hoje.slice(0,7):'total'}-${hoje}.xls`;
+  a.download=`analise-comercial-${mes||'total'}-${hoje}.xls`;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href),4000);
 }
