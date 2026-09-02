@@ -891,6 +891,7 @@ html.tv #pins-sheet{zoom:clamp(1,.115vh,2.2)}
 table.pr-tab{width:100%;border-collapse:collapse;font-size:10.5px}
 table.pr-tab th,table.pr-tab td{border:1px solid #D1D1D6;padding:4px 8px;text-align:right}
 table.pr-tab td:nth-child(3){text-align:left;border-left-width:2px}
+table.pr-tab td.pr-vazia{border-color:transparent;background:#fff}
 table.pr-tab th{background:#F2F2F7;font-weight:600;text-align:right}
 table.pr-tab th:first-child,table.pr-tab td:first-child{text-align:left}
 #print-root .chleg{margin-top:8px;font-size:10px;color:#3C3C43}
@@ -3136,7 +3137,7 @@ function openPersonInsights(id){
     </div>
 
     <div class="pins-stats">
-      <div><div class="v">${d.viagem.size}</div><div class="k">dias fora</div></div>
+      <div><div class="v">${d.viagem.size}</div><div class="k">dias em viagem</div></div>
       <div><div class="v">${Math.round(d.km).toLocaleString('pt-PT')}</div><div class="k">km percorridos</div></div>
       <div><div class="v">${d.viagens}</div><div class="k">viagens</div></div>
       <div><div class="v">${d.paises.size}</div><div class="k">países</div></div>
@@ -3152,7 +3153,7 @@ function openPersonInsights(id){
     </div>
 
     <div class="chartcard">
-      <h4>Dias fora por mês</h4>
+      <h4>Dias em viagem por mês</h4>
       <div class="cap">6 meses até ${esc(insTotal?nomeMes(isoHoje().slice(0,7)):nomeMes(insMes))} · histórico completo</div>
       <div id="pc-mes"></div>
     </div>
@@ -3195,12 +3196,15 @@ function exportPersonPdf(){
   const hoje=isoHoje(), L=640;
 
   /* pares lado a lado: a folha cabe numa página nos casos correntes */
+  const media = d.viagens ? (d.viagem.size/d.viagens).toLocaleString('pt-PT',{maximumFractionDigits:1}) : null;
   const pares=[
-    ['Dias fora (viagem)',d.viagem.size,            'Nº de viagens',d.viagens],
-    ['Dias na fábrica',d.fabrica.size,              'Países visitados',d.paises.size],
-    ['Dias em home office',d.home.size,             "Km percorridos (ida e volta)",Math.round(d.km).toLocaleString('pt-PT')],
-    ['Dias de férias',d.ferias.size,                'Taxa de esforço',taxa===null?'—':taxa+'%'],
-    ['Visitas recebidas (dias)',d.visitas.size,     'Dias úteis registados',uteis]
+    ['Dias em viagem',d.viagem.size,                'Nº de viagens',d.viagens],
+    ['Duração média por viagem',media===null?'—':`${media} ${media==='1'?'dia':'dias'}`,
+                                                    'Países visitados',d.paises.size],
+    ['Dias na fábrica',d.fabrica.size,              'Km percorridos (ida e volta)',Math.round(d.km).toLocaleString('pt-PT')],
+    ['Dias em home office',d.home.size,             'Taxa de esforço',taxa===null?'—':taxa+'%'],
+    ['Dias de férias',d.ferias.size,                'Dias úteis registados',uteis],
+    ['Visitas recebidas (dias)',d.visitas.size,     '','']
   ];
   document.getElementById('print-root').innerHTML = `
     <div class="pr-top">
@@ -3231,7 +3235,9 @@ function exportPersonPdf(){
     <div class="pr-sec">
       <h3>Números do período</h3>
       <table class="pr-tab"><tbody>
-        ${pares.map(([k1,v1,k2,v2])=>`<tr><td>${k1}</td><td>${v1}</td><td>${k2}</td><td>${v2}</td></tr>`).join('')}
+        ${pares.map(([k1,v1,k2,v2])=>`<tr><td>${k1}</td><td>${v1}</td>`
+          + (k2 ? `<td>${k2}</td><td>${v2}</td>` : `<td class="pr-vazia"></td><td class="pr-vazia"></td>`)
+          + `</tr>`).join('')}
       </tbody></table>
     </div>
 
@@ -3243,7 +3249,7 @@ function exportPersonPdf(){
     </div>
 
     <div class="pr-sec">
-      <h3>Dias fora por mês · 6 meses até ${esc(insTotal?nomeMes(hoje.slice(0,7)):nomeMes(insMes))}</h3>
+      <h3>Dias em viagem por mês · 6 meses até ${esc(insTotal?nomeMes(hoje.slice(0,7)):nomeMes(insMes))}</h3>
       ${svgColunas(serieMensal(id,6,insTotal?null:insMes),'viagem',{largura:L})}
     </div>
 
@@ -3334,17 +3340,19 @@ function exportInsightsExcel(){
   const hoje=isoHoje();
 
   const cab=['Comercial','Taxa de esforço (%)','Dias úteis registados','Na fábrica (dias)','Home office (dias)',
-             'Fora / viagem (dias)','Férias (dias)','Visitas recebidas (dias)','Nº de viagens','Países visitados',
+             'Dias em viagem','Férias (dias)','Visitas recebidas (dias)','Nº de viagens','Duração média por viagem (dias)','Países visitados',
              'Km percorridos (ida e volta)','Conformes','Falhas (divergências)','Só com registo','Só com plano','Conformidade (%)'];
   const linhas=fila.map(({m,d,taxa,uteis})=>{
     const comparaveis=d.conforme.length+d.divergente.length;
     return [m.name, taxa===null?'':taxa, uteis, d.fabrica.size, d.home.size, d.viagem.size, d.ferias.size,
-            d.visitas.size, d.viagens, d.paises.size, Math.round(d.km),
+            d.visitas.size, d.viagens, d.viagens?Math.round(d.viagem.size/d.viagens*10)/10:'',
+            d.paises.size, Math.round(d.km),
             d.conforme.length, d.divergente.length, d.soRegisto.length, d.soPlano.length,
             comparaveis?Math.round(d.conforme.length/comparaveis*100):''];
   });
   const totais=['Equipa · total', tot.pesoDias?Math.round(tot.pesoSoma/tot.pesoDias):'', '',
-                tot.fabrica, tot.home, tot.viagem, tot.ferias, tot.visitas, tot.viagens, '',
+                tot.fabrica, tot.home, tot.viagem, tot.ferias, tot.visitas, tot.viagens,
+                tot.viagens?Math.round(tot.viagem/tot.viagens*10)/10:'', '',
                 Math.round(tot.km), tot.conforme, tot.divergente, tot.soRegisto, tot.soPlano, ''];
 
   // segundo quadro: as falhas (planeado e registado diferentes no mesmo dia)
