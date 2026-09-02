@@ -1035,7 +1035,6 @@ html.tv #pins-sheet{zoom:clamp(1,.115vh,2.2)}
         <h2 id="done-title">Registado</h2>
         <p id="done-sub"></p>
       </div>
-      <button class="plain" onclick="backToForm()">Corrigir registo</button>
       <button class="plain" onclick="MODE==='tv'?closeRegModal():showPhoneView('equipa')">Ver a equipa</button>
     </div>
    </div>
@@ -1710,18 +1709,6 @@ function preparePhone(){
     navigator.geolocation.getCurrentPosition(p=>{gps={lat:p.coords.latitude,lng:p.coords.longitude}},()=>{},{timeout:5000});
   }
 }
-function backToForm(){
-  document.getElementById('ph-done').classList.add('hide');
-  document.getElementById('ph-form').classList.remove('hide');
-  if(MODE!=='tv') showPhoneView('registo');
-  document.getElementById('form').reset();
-  document.getElementById('f-where').value='';
-  document.getElementById('sub-block').hidden=true;
-  document.getElementById('dest-block').hidden=true;
-  ORDER_CHECKIN.forEach(x=>document.getElementById('opt-'+x).setAttribute('aria-pressed','false'));
-  hideAlert(); renderPhoneBoard();
-}
-
 function submitCheckin(e){
   e.preventDefault();
   const id=parseInt(document.getElementById('f-member').value);
