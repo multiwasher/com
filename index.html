@@ -810,7 +810,7 @@ html[data-theme="light"]{
   background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);padding:3vh 2vw;
 }
 #pins-scrim.on{display:flex;animation:fadein .25s ease}
-#pins-sheet{width:min(560px,94vw);max-height:92vh;border-radius:26px;overflow-y:auto;padding:0 0 20px}
+#pins-sheet{width:min(560px,94vw);max-height:92vh;border-radius:26px;overflow:hidden;display:flex;flex-direction:column}
 html.tv #pins-sheet{zoom:clamp(1,.115vh,2.2)}
 #pins-head{
   position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:12px;padding:18px 20px 14px;
@@ -823,7 +823,9 @@ html.tv #pins-sheet{zoom:clamp(1,.115vh,2.2)}
 #pins-sub{font-size:13px;color:var(--text-2);margin-top:1px}
 #pins-head .x{margin-left:auto;width:32px;height:32px;border-radius:50%;background:var(--fill);color:var(--text-2);display:flex;align-items:center;justify-content:center;font-size:15px;flex:none}
 #pins-head .x:hover{background:var(--fill-2);color:var(--text)}
-#pins-body{padding:16px 20px 0}
+#pins-body{flex:1;min-height:0;overflow-y:auto;padding:16px 20px 20px}
+#pins-foot{flex:none;padding:14px 20px;border-top:1px solid var(--sep);display:flex;justify-content:flex-end}
+#pins-foot .cta{width:auto;margin:0;padding:12px 22px;display:flex;align-items:center;gap:8px}
 
 .pins-hero{display:flex;align-items:center;gap:16px;background:var(--fill);border-radius:16px;padding:14px 16px;margin-bottom:14px}
 .pins-gauge{position:relative;width:128px;flex:none}
@@ -847,6 +849,59 @@ html.tv #pins-sheet{zoom:clamp(1,.115vh,2.2)}
 .pins-falhas .falhas-head{margin-top:14px}
 .pins-paises{display:flex;flex-wrap:wrap;gap:7px}
 .paischip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;background:var(--fill-2);color:var(--text-2);padding:4px 10px;border-radius:99px}
+
+/* ── Folha A4 do card individual (impressão / Guardar como PDF) ──────
+   Sem bibliotecas: o próprio browser gera o PDF a partir desta folha.
+   As cores são fixas e não seguem o tema — o papel é sempre branco. */
+#print-root{display:none}
+@media print{
+  html,body{height:auto!important;overflow:visible!important;background:#fff!important;margin:0!important;padding:0!important}
+  html{font-size:16px!important}
+  body>*{display:none!important}
+  body>#print-root{display:block!important}
+  @page{size:A4 portrait;margin:14mm}
+}
+#print-root{
+  --ch-fab:#34C759; --ch-home:#007AFF; --ch-via:#FF9500; --ch-fer:#AF52DE; --ch-vis:#0BC6E3;
+  --ch-ok:#34C759; --ch-falta:#FF3B30; --ch-neutro:#8E8E93;
+  --ch-track:#E5E5EA; --ch-grid:#D1D1D6;
+  --text:#000; --text-2:#3C3C43; --text-3:#6E6E73; --sep:#D1D1D6;
+  color:#000;background:#fff;font-size:11px;line-height:1.45;letter-spacing:0;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;
+}
+#print-root h1,#print-root h2{margin:0;letter-spacing:-.02em}
+.pr-top{display:flex;align-items:center;gap:12px;border-bottom:1.5px solid #000;padding-bottom:10px;margin-bottom:16px}
+.pr-top img{height:26px;width:auto;object-fit:contain}
+.pr-top .pr-t{flex:1;min-width:0}
+.pr-top h1{font-size:15px;font-weight:700}
+.pr-top .pr-sub{font-size:10.5px;color:#6E6E73;margin-top:2px}
+.pr-top .pr-data{font-size:10px;color:#6E6E73;text-align:right;flex:none}
+.pr-quem{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
+.pr-quem h2{font-size:20px;font-weight:700}
+.pr-quem span{font-size:11px;color:#3C3C43}
+.pr-hero{display:flex;align-items:center;gap:18px;border:1px solid #D1D1D6;border-radius:8px;padding:10px 14px;margin-bottom:12px;break-inside:avoid}
+.pr-hero .pr-g{width:118px;flex:none;position:relative}
+.pr-hero .pr-gv{position:absolute;left:0;right:0;bottom:0;text-align:center;font-size:22px;font-weight:700}
+.pr-hero .pr-gv i{font-style:normal;font-size:12px;color:#3C3C43}
+.pr-hero .pr-k{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6E6E73}
+.pr-hero .pr-b{font-size:16px;font-weight:700;margin:1px 0 4px}
+.pr-hero p{margin:0;font-size:10px;color:#3C3C43}
+.pr-sec{margin-bottom:12px;break-inside:avoid}
+.pr-sec h3{margin:0 0 7px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6E6E73}
+table.pr-tab{width:100%;border-collapse:collapse;font-size:10.5px}
+table.pr-tab th,table.pr-tab td{border:1px solid #D1D1D6;padding:4px 8px;text-align:right}
+table.pr-tab td:nth-child(3){text-align:left;border-left-width:2px}
+table.pr-tab th{background:#F2F2F7;font-weight:600;text-align:right}
+table.pr-tab th:first-child,table.pr-tab td:first-child{text-align:left}
+#print-root .chleg{margin-top:8px;font-size:10px;color:#3C3C43}
+#print-root .falha{border-top:.5px solid #D1D1D6;font-size:10.5px;color:#3C3C43;padding:4px 0}
+#print-root .falha b{color:#000}
+#print-root .falhas-head{font-size:10px;color:#6E6E73;margin:8px 0 4px}
+#print-root .falhas-head.ok{color:#1F8A3B}
+#print-root .falhas-nota{font-size:9.5px;color:#6E6E73;margin-top:6px}
+.pr-paises{display:flex;flex-wrap:wrap;gap:5px}
+.pr-paises span{border:1px solid #D1D1D6;border-radius:99px;padding:2px 8px;font-size:10px}
+.pr-fim{margin-top:16px;padding-top:8px;border-top:.5px solid #D1D1D6;font-size:9px;color:#6E6E73}
 
 @media (prefers-reduced-motion:reduce){ *,*::before,*::after{animation:none!important;transition:none!important} }
 </style>
@@ -1035,7 +1090,6 @@ html.tv #pins-sheet{zoom:clamp(1,.115vh,2.2)}
         <h2 id="done-title">Registado</h2>
         <p id="done-sub"></p>
       </div>
-      <button class="plain" onclick="backToForm()">Corrigir registo</button>
       <button class="plain" onclick="MODE==='tv'?closeRegModal():showPhoneView('equipa')">Ver a equipa</button>
     </div>
    </div>
@@ -1255,8 +1309,15 @@ html.tv #pins-sheet{zoom:clamp(1,.115vh,2.2)}
       <button class="x" onclick="closePersonInsights()" aria-label="Fechar"><svg class="ico"><use href="#i-x"/></svg></button>
     </div>
     <div id="pins-body"></div>
+    <div id="pins-foot">
+      <button class="cta" onclick="exportPersonPdf()" title="Abre o diálogo de impressão — escolha «Guardar como PDF»">
+        <svg class="ico"><use href="#i-download"/></svg>Exportar PDF
+      </button>
+    </div>
   </div>
 </div>
+
+<div id="print-root" aria-hidden="true"></div>
 
 <button class="switch" id="switch" onclick="toggleMode()"></button>
 
@@ -1710,18 +1771,6 @@ function preparePhone(){
     navigator.geolocation.getCurrentPosition(p=>{gps={lat:p.coords.latitude,lng:p.coords.longitude}},()=>{},{timeout:5000});
   }
 }
-function backToForm(){
-  document.getElementById('ph-done').classList.add('hide');
-  document.getElementById('ph-form').classList.remove('hide');
-  if(MODE!=='tv') showPhoneView('registo');
-  document.getElementById('form').reset();
-  document.getElementById('f-where').value='';
-  document.getElementById('sub-block').hidden=true;
-  document.getElementById('dest-block').hidden=true;
-  ORDER_CHECKIN.forEach(x=>document.getElementById('opt-'+x).setAttribute('aria-pressed','false'));
-  hideAlert(); renderPhoneBoard();
-}
-
 function submitCheckin(e){
   e.preventDefault();
   const id=parseInt(document.getElementById('f-member').value);
@@ -3132,6 +3181,95 @@ function openPersonInsights(id){
   pinsAberto=id;
 }
 let pinsAberto=null;
+/** Folha A4 com os insights do colaborador em vista. Sem bibliotecas: monta
+    a folha e entrega ao diálogo de impressão, onde se escolhe "Guardar como
+    PDF". Funciona em desktop e telemóvel, online ou offline. */
+function exportPersonPdf(){
+  const id=pinsAberto; if(id===null) return;
+  const m=members.find(x=>x.id===id); if(!m) return;
+  const d=buildInsights(periodoEmVista()).get(id)||linhaVazia();
+  const taxa=taxaEsforco(d), uteis=diasUteis(d);
+  const comparaveis=d.conforme.length+d.divergente.length;
+  const conformidade=pct(d.conforme.length,comparaveis);
+  const paises=[...d.paises].sort((a,b)=>a.localeCompare(b,'pt'));
+  const hoje=isoHoje(), L=640;
+
+  /* pares lado a lado: a folha cabe numa página nos casos correntes */
+  const pares=[
+    ['Dias fora (viagem)',d.viagem.size,            'Nº de viagens',d.viagens],
+    ['Dias na fábrica',d.fabrica.size,              'Países visitados',d.paises.size],
+    ['Dias em home office',d.home.size,             "Km percorridos (ida e volta)",Math.round(d.km).toLocaleString('pt-PT')],
+    ['Dias de férias',d.ferias.size,                'Taxa de esforço',taxa===null?'—':taxa+'%'],
+    ['Visitas recebidas (dias)',d.visitas.size,     'Dias úteis registados',uteis]
+  ];
+  document.getElementById('print-root').innerHTML = `
+    <div class="pr-top">
+      <img src="https://res.cloudinary.com/dlkkjtgvy/image/upload/v1786032688/1_SOMENGIL_PNG_LOGO__p1z4co.png"
+           alt="Somengil" onerror="this.remove()">
+      <div class="pr-t">
+        <h1>BIZDEV Team · Análise individual</h1>
+        <div class="pr-sub">Esforço realizado, a partir dos registos diários</div>
+      </div>
+      <div class="pr-data">${esc(periodoTexto())}<br>Extraído a ${esc(hoje)}</div>
+    </div>
+
+    <div class="pr-quem">
+      <h2>${esc(m.name)}</h2>
+      <span>${uteis} ${uteis===1?'dia útil registado':'dias úteis registados'}</span>
+    </div>
+
+    <div class="pr-hero">
+      <div class="pr-g">${svgMedidor(taxa)}<div class="pr-gv">${taxa===null?'—':taxa+'<i>%</i>'}</div></div>
+      <div>
+        <div class="pr-k">Taxa de esforço</div>
+        <div class="pr-b">${taxa===null?'Sem dias registados':esc(bandaEsforco(taxa))}</div>
+        <p>Média ponderada dos dias úteis registados: viagem 100%, visita recebida 70%,
+           fábrica 50%, home office 30%. Férias não entram no cálculo.</p>
+      </div>
+    </div>
+
+    <div class="pr-sec">
+      <h3>Números do período</h3>
+      <table class="pr-tab"><tbody>
+        ${pares.map(([k1,v1,k2,v2])=>`<tr><td>${k1}</td><td>${v1}</td><td>${k2}</td><td>${v2}</td></tr>`).join('')}
+      </tbody></table>
+    </div>
+
+    <div class="pr-sec">
+      <h3>Distribuição dos dias</h3>
+      ${svgEmpilhado([{nome:m.name,curto:'Dias',fabrica:d.fabrica.size,home:d.home.size,
+         viagem:d.viagem.size,ferias:d.ferias.size,visitas:d.visitas.size}],SERIES_DIAS,{largura:L})}
+      ${legendaHtml(SERIES_DIAS)}
+    </div>
+
+    <div class="pr-sec">
+      <h3>Dias fora por mês · 6 meses até ${esc(insTotal?nomeMes(hoje.slice(0,7)):nomeMes(insMes))}</h3>
+      ${svgColunas(serieMensal(id,6,insTotal?null:insMes),'viagem',{largura:L})}
+    </div>
+
+    <div class="pr-sec">
+      <h3>Planeamento vs registo diário</h3>
+      ${svgEmpilhado([{nome:m.name,curto:'Dias',conforme:d.conforme.length,divergente:d.divergente.length,
+         semComparacao:d.soRegisto.length+d.soPlano.length}],SERIES_CONF,{largura:L})}
+      ${legendaHtml(SERIES_CONF)}
+      <div style="margin-top:6px;font-size:10px;color:#3C3C43">${conformidade===null
+        ? 'Sem dias com planeamento e registo para comparar.'
+        : `${conformidade}% dos ${comparaveis} ${comparaveis===1?'dia comparável está conforme':'dias comparáveis estão conformes'}.`}</div>
+      ${listaFalhasPessoa(d)}
+    </div>
+
+    ${paises.length?`<div class="pr-sec"><h3>Países visitados</h3>
+      <div class="pr-paises">${paises.map(p=>`<span>${bandeiraPais(p)} ${esc(p)}</span>`).join('')}</div></div>`:''}
+
+    <div class="pr-fim">Só há falha quando o mesmo dia tem planeamento e registo diferentes.
+      Km's percorridos: estimativa em linha reta (ida e volta) entre Aveiro e o país de destino de cada viagem.
+      Documento interno Somengil.</div>`;
+
+  const limpar=()=>{ document.getElementById('print-root').innerHTML=''; removeEventListener('afterprint',limpar); };
+  addEventListener('afterprint',limpar);
+  setTimeout(()=>window.print(),60);      // dá tempo ao browser de desenhar a folha
+}
+
 function closePersonInsights(){ pinsAberto=null; const el=document.getElementById('pins-scrim'); if(el) el.classList.remove('on'); }
 
 /* os gráficos são desenhados à largura medida: ao mudar o tamanho da janela
