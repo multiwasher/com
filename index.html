@@ -238,6 +238,14 @@ textarea::placeholder{color:var(--text-3)}
 .opt .mark{margin-left:auto;color:var(--blue);font-size:17px;opacity:0;transform:scale(.6);transition:all .22s var(--ease)}
 .opt[aria-pressed="true"] .mark{opacity:1;transform:none}
 
+.sync-ico{
+  width:1.5rem;height:1.5rem;object-fit:contain;flex:none;
+  animation:girar 1.15s linear infinite;
+}
+html.phone .sync-ico{width:20px;height:20px;margin-left:auto}
+.sync-ico[hidden]{display:none}
+@keyframes girar{to{transform:rotate(360deg)}}
+
 .pl-logo-prev{
   flex:none;width:34px;height:34px;border-radius:8px;background:#fff;
   display:flex;align-items:center;justify-content:center;overflow:hidden;margin-left:auto;
@@ -987,7 +995,7 @@ table.pr-tab th:first-child,table.pr-tab td:first-child{text-align:left}
     <img class="logo on-dark" src="https://res.cloudinary.com/dlkkjtgvy/image/upload/v1780388780/somengil_logo_white_ofh0xi.png" alt="Somengil" title="Duplo clique: análise da equipa" ondblclick="openInsights()" onerror="this.remove()">
     <img class="logo on-light" src="https://res.cloudinary.com/dlkkjtgvy/image/upload/v1786032688/1_SOMENGIL_PNG_LOGO__p1z4co.png" alt="Somengil" title="Duplo clique: análise da equipa" ondblclick="openInsights()" onerror="this.remove()">
     <h1>BIZDEV <i>team</i></h1>
-    <span class="live"><i></i><span id="tv-live">Em direto</span></span>
+    <span class="live"><i></i><span id="tv-live">Em direto</span><img class="sync-ico" src="https://res.cloudinary.com/dlkkjtgvy/image/upload/v1775600210/%C3%8DCONE_VERS%C3%83O_PRINCIPAL_qoqnjb.png" alt="" hidden onerror="this.remove()"></span>
     <div class="right">
       <div class="t" id="tv-clock">--:--</div>
       <div class="d" id="tv-date">—</div>
@@ -1044,6 +1052,7 @@ table.pr-tab th:first-child,table.pr-tab td:first-child{text-align:left}
   <div class="ph-nav"><div class="in">
     <img class="on-dark" src="https://res.cloudinary.com/dlkkjtgvy/image/upload/v1780388780/somengil_logo_white_ofh0xi.png" alt="Somengil" title="Duplo toque: análise da equipa" ondblclick="openInsights()" onerror="this.remove()">
     <img class="on-light" src="https://res.cloudinary.com/dlkkjtgvy/image/upload/v1786032688/1_SOMENGIL_PNG_LOGO__p1z4co.png" alt="Somengil" title="Duplo toque: análise da equipa" ondblclick="openInsights()" onerror="this.remove()">
+    <img class="sync-ico" src="https://res.cloudinary.com/dlkkjtgvy/image/upload/v1775600210/%C3%8DCONE_VERS%C3%83O_PRINCIPAL_qoqnjb.png" alt="" hidden onerror="this.remove()">
     <span class="now" id="ph-now"></span>
     <button class="theme" onclick="toggleTheme()" aria-label="Alternar tema claro ou escuro"><svg class="ico on-dark"><use href="#i-sun"/></svg><svg class="ico on-light"><use href="#i-moon"/></svg></button>
   </div></div>
@@ -1416,7 +1425,7 @@ const EQUIPA = [
   {id:1,  name:"David José Nunes Borges",                     photo:"https://res.cloudinary.com/dlkkjtgvy/image/upload/v1786012316/David_Borges_Comercial_iaun1r.jpg"},
   {id:2,  name:"Diogo Paulo Gonçalves Marques Brito de Sousa",photo:"https://res.cloudinary.com/dlkkjtgvy/image/upload/v1786012316/Diogo_Sousa_Comercial_hukxx3.jpg"},
   {id:3,  name:"João Maria Bernardo da Cunha Pinto",          photo:"https://res.cloudinary.com/dlkkjtgvy/image/upload/v1786012316/Jo%C3%A3o_Pinto_Comercial_jfqmzk.jpg"},
-  {id:4,  name:"Manuel Diniz Cruz do Marco",                  photo:"https://res.cloudinary.com/dlkkjtgvy/image/upload/v1786012316/Manuel_Diniz_Comercial_lhb2pc.jpg"},
+  {id:4,  name:"Manuel Diniz Cruz do Marco", curto:"Manuel Diniz", photo:"https://res.cloudinary.com/dlkkjtgvy/image/upload/v1786012316/Manuel_Diniz_Comercial_lhb2pc.jpg"},
   {id:5,  name:"Miguel André Ferreira Pacheco Quental",       photo:"https://res.cloudinary.com/dlkkjtgvy/image/upload/v1786012315/Andr%C3%A9_Quental_Comercial_okupkb.jpg"},
   {id:6,  name:"Renato Pires Gomes",                          photo:"https://res.cloudinary.com/dlkkjtgvy/image/upload/v1786012316/Renato_Gomes_Comercial_fs38ew.jpg"},
   {id:7,  name:"David Mendez",                                photo:"https://res.cloudinary.com/dlkkjtgvy/image/upload/v1786012315/David_Mendez_Comercial_ayjxcw.jpg"},
@@ -1452,8 +1461,16 @@ function loadState(){
 
 /* ═══ Utilitários ═══ */
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const initials=n=>{const p=String(n||'').trim().split(/\s+/);return (p.length===1?p[0].slice(0,2):p[0][0]+p[p.length-1][0]).toUpperCase()};
-const shortName=n=>{const p=String(n).trim().split(/\s+/);return p.length<3?n:`${p[0]} ${p[p.length-1]}`};
+/* Nome mostrado no ecrã. Por omissão é o primeiro e o último; um `curto` na
+   EQUIPA manda sobre isso — o `name` continua a ser o nome completo, que é o
+   que casa com as linhas da folha. */
+const NOMES_CURTOS = Object.fromEntries(EQUIPA.filter(p=>p.curto).map(p=>[p.name,p.curto]));
+const initials=n=>{const p=String(NOMES_CURTOS[n]||n||'').trim().split(/\s+/);return (p.length===1?p[0].slice(0,2):p[0][0]+p[p.length-1][0]).toUpperCase()};
+const shortName=n=>{
+  if(NOMES_CURTOS[n]) return NOMES_CURTOS[n];
+  const p=String(n).trim().split(/\s+/);
+  return p.length<3?n:`${p[0]} ${p[p.length-1]}`;
+};
 function hhmm(ts){ return String(ts).split(' ')[1] || '--:--'; }
 function dmy(ts){ return String(ts).split(' ')[0].slice(5).split('-').reverse().join('/'); }
 function isToday(ts){const n=new Date();return String(ts).startsWith(`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`)}
@@ -2014,7 +2031,30 @@ function estadoLigacao(ok,detalhe){
   pil.style.color = ok ? 'var(--text-2)' : 'var(--red)';
 }
 
+/* Símbolo de carregamento. Só aparece se a leitura demorar mais de um quarto
+   de segundo — assim uma sincronização rápida não pisca no ecrã da TV. */
+let syncTimer=null, syncEmCurso=0;
+function mostrarSync(ligar){
+  if(ligar){
+    if(++syncEmCurso>1) return;
+    syncTimer=setTimeout(()=>document.querySelectorAll('.sync-ico').forEach(e=>e.hidden=false),250);
+  }else{
+    if(--syncEmCurso>0) return;
+    syncEmCurso=0; clearTimeout(syncTimer);
+    document.querySelectorAll('.sync-ico').forEach(e=>e.hidden=true);
+  }
+}
+
 async function sincronizar(){
+  mostrarSync(true);
+  try{
+    return await sincronizarAgora();
+  }finally{
+    mostrarSync(false);
+  }
+}
+
+async function sincronizarAgora(){
   const [onb,plan,vis] = await Promise.all([lerAccao('dados'), lerAccao('planeado'), lerAccao('visitas')]);
   if(onb===null && plan===null && vis===null){                // sem ligação: fica o que estiver local
     estadoLigacao(false, location.protocol==='file:' ? 'Abra por http, não por ficheiro' : 'Sem ligação à folha');
@@ -3335,7 +3375,7 @@ function exportPersonPdf(){
     </div>
 
     <div class="pr-quem">
-      <h2>${esc(m.name)}</h2>
+      <h2>${esc(shortName(m.name))}</h2>
       <span>${uteis} ${uteis===1?'dia útil registado':'dias úteis registados'}</span>
     </div>
 
@@ -3360,7 +3400,7 @@ function exportPersonPdf(){
 
     <div class="pr-sec">
       <h3>Distribuição dos dias</h3>
-      ${svgEmpilhado([{nome:m.name,curto:'Dias',fabrica:d.fabrica.size,home:d.home.size,
+      ${svgEmpilhado([{nome:shortName(m.name),curto:'Dias',fabrica:d.fabrica.size,home:d.home.size,
          viagem:d.viagem.size,ferias:d.ferias.size,visitas:d.visitas.size}],SERIES_DIAS,{largura:L})}
       ${legendaHtml(SERIES_DIAS)}
     </div>
@@ -3372,7 +3412,7 @@ function exportPersonPdf(){
 
     <div class="pr-sec">
       <h3>Planeamento vs registo diário</h3>
-      ${svgEmpilhado([{nome:m.name,curto:'Dias',conforme:d.conforme.length,divergente:d.divergente.length,
+      ${svgEmpilhado([{nome:shortName(m.name),curto:'Dias',conforme:d.conforme.length,divergente:d.divergente.length,
          semComparacao:d.soRegisto.length+d.soPlano.length}],SERIES_CONF,{largura:L})}
       ${legendaHtml(SERIES_CONF)}
       <div style="margin-top:6px;font-size:10px;color:#3C3C43">${conformidade===null
@@ -3462,7 +3502,7 @@ function exportInsightsExcel(){
              'Km percorridos (ida e volta)','Conformes','Falhas (divergências)','Só com registo','Só com plano','Conformidade (%)'];
   const linhas=fila.map(({m,d,taxa,uteis})=>{
     const comparaveis=d.conforme.length+d.divergente.length;
-    return [m.name, taxa===null?'':taxa, uteis, d.fabrica.size, d.home.size, d.viagem.size, d.ferias.size,
+    return [shortName(m.name), taxa===null?'':taxa, uteis, d.fabrica.size, d.home.size, d.viagem.size, d.ferias.size,
             d.visitas.size, d.viagens, d.paises.size, Math.round(d.km),
             d.conforme.length, d.divergente.length, d.soRegisto.length, d.soPlano.length,
             comparaveis?Math.round(d.conforme.length/comparaveis*100):''];
@@ -3474,7 +3514,7 @@ function exportInsightsExcel(){
   // segundo quadro: as falhas (planeado e registado diferentes no mesmo dia)
   const falhas=[];
   fila.forEach(({m,d})=>{
-    d.divergente.forEach(f=>falhas.push([m.name,f.dia,
+    d.divergente.forEach(f=>falhas.push([shortName(m.name),f.dia,
       STATUS[f.prev]?STATUS[f.prev].label:f.prev, STATUS[f.obs]?STATUS[f.obs].label:f.obs]));
   });
   falhas.sort((a,b)=>b[1].localeCompare(a[1]));
@@ -3482,8 +3522,8 @@ function exportInsightsExcel(){
   // terceiro quadro: dias sem termo de comparação (não são falhas)
   const semComp=[];
   fila.forEach(({m,d})=>{
-    d.soRegisto.forEach(f=>semComp.push([m.name,f.dia,'Só registo diário','',STATUS[f.obs]?STATUS[f.obs].label:f.obs]));
-    d.soPlano.forEach(f=>semComp.push([m.name,f.dia,'Só planeamento',STATUS[f.prev]?STATUS[f.prev].label:f.prev,'']));
+    d.soRegisto.forEach(f=>semComp.push([shortName(m.name),f.dia,'Só registo diário','',STATUS[f.obs]?STATUS[f.obs].label:f.obs]));
+    d.soPlano.forEach(f=>semComp.push([shortName(m.name),f.dia,'Só planeamento',STATUS[f.prev]?STATUS[f.prev].label:f.prev,'']));
   });
   semComp.sort((a,b)=>b[1].localeCompare(a[1]));
 
@@ -3623,6 +3663,30 @@ setInterval(()=>{
   sincronizar().then(ok=>{ if(!ok){ loadState(); renderTV(); drawMap('tvmap'); } });
 }, REFRESH_MS);
 setInterval(()=>{ if(MODE==='tv') tvClock(); }, 15000);
+
+/* ═══ Recarga periódica ═══
+   A TV fica ligada dias seguidos: uma página que nunca recarrega acumula
+   memória e fica presa a uma versão antiga. De 4 em 4 horas recarrega — mas
+   nunca por cima de trabalho em curso: adia enquanto houver um modal aberto,
+   um campo a ser preenchido, um registo acabado de fazer, ou não houver rede. */
+const RECARGA_MS = 4*60*60*1000;
+let proximaRecarga = Date.now() + RECARGA_MS;
+
+function podeRecarregar(){
+  if(!navigator.onLine) return false;
+  if(document.querySelector('#reg-scrim.on,#plan-scrim.on,#map-scrim.on,#pcal-scrim.on,#ins-scrim.on,#pins-scrim.on,#inspass-scrim.on')) return false;
+  const foco=document.activeElement;
+  if(foco && /^(INPUT|TEXTAREA|SELECT)$/.test(foco.tagName)) return false;
+  const feito=document.getElementById('ph-done');
+  if(feito && !feito.classList.contains('hide')) return false;      // ecrã de confirmação à vista
+  return true;
+}
+
+setInterval(()=>{
+  if(Date.now() < proximaRecarga) return;
+  if(!podeRecarregar()) return;                                     // volta a tentar daqui a um minuto
+  location.reload();
+}, 60000);
 
 </script>
 </body>
