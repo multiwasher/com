@@ -710,6 +710,15 @@ input[type=text]::placeholder,input[type=password]::placeholder,input[type=url]:
 .tcal .d .dots i{width:6px;height:6px;border-radius:50%;background:var(--orange);display:block}
 .tcal .d .mais{font-size:9px;color:var(--orange);font-weight:600}
 
+/* Total acumulado: um calendário por mês, lado a lado. Os dias encolhem para
+   caberem doze meses sem obrigar a percorrer o card todo. */
+.calano{display:grid;grid-template-columns:repeat(auto-fill,minmax(146px,1fr));gap:14px 12px}
+.calano .calmini-t{font-size:11.5px;font-weight:600;color:var(--text-2);text-align:center;padding-bottom:5px;text-transform:capitalize}
+.calano .tcal{gap:2px}
+.calano .tcal .d{min-height:0;aspect-ratio:1;border-radius:6px;padding:0;justify-content:center;gap:0}
+.calano .tcal .d .num{font-size:10px}
+.calano .tcal .wd{font-size:9px;padding:0 0 2px}
+
 
 .trip-pin{
   display:flex;align-items:center;gap:8px;transform:translate(-50%,-50%);
@@ -925,6 +934,7 @@ html.tv #pins-sheet{zoom:clamp(1,.115vh,2.2)}
   --ch-track:#E5E5EA; --ch-grid:#D1D1D6;
   --text:#000; --text-2:#3C3C43; --text-3:#6E6E73; --sep:#D1D1D6;
   --fill:#F2F2F7; --fill-2:#E5E5EA; --blue:#007AFF;
+  --green:#34C759; --orange:#FF9500; --purple:#AF52DE; --visit:#0BC6E3;
   color:#000;background:#fff;font-size:11px;line-height:1.45;letter-spacing:0;
   -webkit-print-color-adjust:exact;print-color-adjust:exact;
 }
@@ -947,6 +957,9 @@ html.tv #pins-sheet{zoom:clamp(1,.115vh,2.2)}
 .pr-hero p{margin:0;font-size:10px;color:#3C3C43}
 .pr-sec{margin-bottom:12px;break-inside:avoid}
 .pr-sec h3{margin:0 0 7px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6E6E73}
+#print-root .calano{grid-template-columns:repeat(3,1fr);gap:10px 12px}
+#print-root .pr-sec.pr-cal{break-inside:auto}
+#print-root .calano .calmini{break-inside:avoid}
 table.pr-tab{width:100%;border-collapse:collapse;font-size:10.5px}
 table.pr-tab th,table.pr-tab td{border:1px solid #D1D1D6;padding:4px 8px;text-align:right}
 table.pr-tab td:nth-child(3){text-align:left;border-left-width:2px}
@@ -3083,6 +3096,42 @@ function calendarioMes(d,mes){
   return `<div class="tcal calmes">${html}</div>`;
 }
 
+/** Meses a desenhar no card individual. Num mês concreto é esse mês; em
+    "Total acumulado" são todos os meses com dias registados, do primeiro
+    até ao mês corrente — o acumulado deixa de mostrar só Setembro. */
+function mesesDoPeriodo(d){
+  if(!insTotal) return [insMes];
+  const meses=new Set();
+  ['fabrica','home','viagem','ferias','visitas'].forEach(k=>d[k].forEach(dia=>meses.add(dia.slice(0,7))));
+  const agora=isoHoje().slice(0,7);
+  if(!meses.size) return [agora];
+  const ord=[...meses].sort();
+  const fim = ord[ord.length-1] > agora ? ord[ord.length-1] : agora;   // planos futuros contam
+  const lista=[];
+  for(let m=ord[0]; m<=fim && lista.length<36; m=mesSeguinte(m,1)) lista.push(m);
+  return lista;
+}
+
+/** Um calendário, ou uma grelha de calendários quando o período é o acumulado. */
+function calendarioPeriodo(d){
+  const meses=mesesDoPeriodo(d);
+  if(meses.length===1) return calendarioMes(d,meses[0]);
+  return `<div class="calano">${meses.map(m=>
+    `<div class="calmini"><div class="calmini-t">${esc(nomeMes(m))}</div>${calendarioMes(d,m)}</div>`
+  ).join('')}</div>`;
+}
+
+/** Título e legenda do bloco do calendário, conforme o período em vista. */
+function calendarioTitulo(d){
+  const meses=mesesDoPeriodo(d);
+  const cor='a cor indica o estado de cada dia';
+  if(meses.length===1)
+    return {t:'Calendário do mês', h3:`Calendário de ${nomeMes(meses[0])}`, c:`${nomeMes(meses[0])} · ${cor}`};
+  const anos=[...new Set(meses.map(m=>m.slice(0,4)))];
+  const t = anos.length===1 ? `Calendário de ${anos[0]}` : 'Calendário do período';
+  return {t, h3:t, c:`${nomeMes(meses[0])} a ${nomeMes(meses[meses.length-1])} · ${cor}`};
+}
+
 /** Medidor de arco para a taxa de esforço (rácio contra um limite). */
 function svgMedidor(valor){
   const R=50, cx=64, cy=62, arco=Math.PI*R;   // meia-volta
@@ -3313,9 +3362,9 @@ function openPersonInsights(id){
     </div>
 
     <div class="chartcard">
-      <h4>Calendário do mês</h4>
-      <div class="cap">${esc(nomeMes(insTotal?isoHoje().slice(0,7):insMes))} · a cor indica o estado de cada dia</div>
-      ${calendarioMes(d, insTotal?isoHoje().slice(0,7):insMes)}
+      <h4>${esc(calendarioTitulo(d).t)}</h4>
+      <div class="cap">${esc(calendarioTitulo(d).c)}</div>
+      ${calendarioPeriodo(d)}
       ${legendaHtml(SERIES_DIAS)}
     </div>
 
@@ -3405,9 +3454,11 @@ function exportPersonPdf(){
       ${legendaHtml(SERIES_DIAS)}
     </div>
 
-    <div class="pr-sec">
-      <h3>Calendário de ${esc(nomeMes(insTotal?hoje.slice(0,7):insMes))}</h3>
-      ${calendarioMes(d, insTotal?hoje.slice(0,7):insMes)}
+    <div class="pr-sec pr-cal">
+      <h3>${esc(calendarioTitulo(d).h3)}</h3>
+      <div style="margin:-3px 0 6px;font-size:10px;color:#6E6E73">${esc(calendarioTitulo(d).c)}</div>
+      ${calendarioPeriodo(d)}
+      ${legendaHtml(SERIES_DIAS)}
     </div>
 
     <div class="pr-sec">
