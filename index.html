@@ -1108,11 +1108,35 @@ table.pr-tab th:first-child,table.pr-tab td:first-child{text-align:left}
   <section class="ph pv" id="pv-registo">
    <div id="regwrap">
     <div id="ph-form">
-      <h1>Onde está hoje?</h1>
+      <h1>Planeamento e registo</h1>
       <div class="sub" id="ph-date2">—</div>
 
       <form id="form" onsubmit="submitCheckin(event)">
-        <div class="lbl" style="margin-top:8px">Quem</div>
+        <div class="lbl" style="margin-top:8px">Planeamento de vários dias</div>
+        <div class="pshort-row">
+          <button type="button" class="pshort" style="--c:var(--orange)" onclick="openPlanModal('viagem')">
+            <span class="sq"><svg class="ico"><use href="#i-cal"/></svg></span>
+            <span>Dias fora</span>
+          </button>
+          <button type="button" class="pshort" style="--c:var(--green)" onclick="openPlanModal('fabrica')">
+            <span class="sq"><svg class="ico"><use href="#i-factory"/></svg></span>
+            <span>Fábrica</span>
+          </button>
+          <button type="button" class="pshort" style="--c:var(--blue)" onclick="openPlanModal('home')">
+            <span class="sq"><svg class="ico"><use href="#i-home"/></svg></span>
+            <span>Home office</span>
+          </button>
+          <button type="button" class="pshort" style="--c:var(--visit)" onclick="openPlanModal('visitas')">
+            <span class="sq"><svg class="ico"><use href="#i-visit"/></svg></span>
+            <span>Visitas inversas</span>
+          </button>
+          <button type="button" class="pshort" style="--c:var(--purple)" onclick="openPlanModal('ferias')">
+            <span class="sq"><svg class="ico"><use href="#i-sun"/></svg></span>
+            <span>Férias</span>
+          </button>
+        </div>
+
+        <div class="lbl" style="margin-top:24px">Quem</div>
         <div class="inset"><div class="frow">
           <label for="f-member">Nome</label>
           <select id="f-member" onchange="onMemberChange()" required><option value="" disabled selected>Escolher</option></select>
@@ -1145,29 +1169,6 @@ table.pr-tab th:first-child,table.pr-tab td:first-child{text-align:left}
 
         <button type="submit" class="cta">Confirmar registo</button>
       </form>
-      <div class="lbl" style="margin-top:20px">Planeamento de vários dias</div>
-      <div class="pshort-row">
-        <button class="pshort" style="--c:var(--orange)" onclick="openPlanModal('viagem')">
-          <span class="sq"><svg class="ico"><use href="#i-cal"/></svg></span>
-          <span>Dias fora</span>
-        </button>
-        <button class="pshort" style="--c:var(--green)" onclick="openPlanModal('fabrica')">
-          <span class="sq"><svg class="ico"><use href="#i-factory"/></svg></span>
-          <span>Fábrica</span>
-        </button>
-        <button class="pshort" style="--c:var(--blue)" onclick="openPlanModal('home')">
-          <span class="sq"><svg class="ico"><use href="#i-home"/></svg></span>
-          <span>Home office</span>
-        </button>
-        <button class="pshort" style="--c:var(--visit)" onclick="openPlanModal('visitas')">
-          <span class="sq"><svg class="ico"><use href="#i-visit"/></svg></span>
-          <span>Visitas inversas</span>
-        </button>
-        <button class="pshort" style="--c:var(--purple)" onclick="openPlanModal('ferias')">
-          <span class="sq"><svg class="ico"><use href="#i-sun"/></svg></span>
-          <span>Férias</span>
-        </button>
-      </div>
     </div>
 
     <div class="hide" id="ph-done">
