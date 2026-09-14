@@ -641,7 +641,7 @@ input[type=text],input[type=password],input[type=url]{
 input[type=text]:focus,input[type=password]:focus,input[type=url]:focus{outline:none}
 input[type=text]::placeholder,input[type=password]::placeholder,input[type=url]::placeholder{color:var(--text-3)}
 
-.cal{padding:4px 0 10px}
+.cal{padding:4px 0 10px;--pc:var(--orange)}   /* --pc: a cor do modo de planeamento em vigor */
 .cal-head{display:flex;align-items:center;gap:8px;padding:10px 12px}
 .cal-head b{flex:1;text-align:center;font-size:16px;font-weight:600;text-transform:capitalize;letter-spacing:-.02em}
 .cal-nav{width:32px;height:32px;border-radius:50%;background:var(--fill);color:var(--text-2);display:flex;align-items:center;justify-content:center;font-size:14px}
@@ -652,15 +652,30 @@ input[type=text]::placeholder,input[type=password]::placeholder,input[type=url]:
 .cal-grid button:hover{background:var(--fill)}
 .cal-grid button:active{transform:scale(.92)}
 .cal-grid button.off{visibility:hidden}
-.cal-grid button.past{opacity:.28;pointer-events:none}
+/* Dias passados continuam a abrir: corrigir um engano é quase sempre
+   corrigir dias que já começaram. Ficam esbatidos, não bloqueados. */
+.cal-grid button.past{opacity:.5}
 .cal-grid button.wknd{color:var(--text-3)}
 .cal-grid button.hoje{box-shadow:inset 0 0 0 1.5px var(--blue)}
-.cal-grid button.sel{background:var(--orange);color:#fff;font-weight:600;box-shadow:0 3px 10px color-mix(in srgb,var(--orange) 45%,transparent)}
+.cal-grid button.sel{background:var(--pc);color:#fff;font-weight:600;box-shadow:0 3px 10px color-mix(in srgb,var(--pc) 45%,transparent)}
+/* Ponto do que já está planeado nesse dia — o utilizador vê o que vai substituir. */
+.cal-grid button.tem{position:relative}
+.cal-grid button.tem::after{
+  content:'';position:absolute;left:50%;bottom:4px;transform:translateX(-50%);
+  width:5px;height:5px;border-radius:50%;background:var(--m);
+}
+.cal-grid button.fab{--m:var(--green)}
+.cal-grid button.hom{--m:var(--blue)}
+.cal-grid button.via{--m:var(--orange)}
+.cal-grid button.fer{--m:var(--purple)}
+.cal-grid button.vis{--m:var(--visit)}
+.cal-grid button.sel.tem::after{background:#fff}
 .cal-foot{display:flex;align-items:center;gap:8px;padding:12px 14px 4px;flex-wrap:wrap}
 .cal-foot .cnt{font-size:13px;color:var(--text-2);margin-right:auto}
+.cal-nota{font-size:11.5px;line-height:1.4;color:var(--text-2);padding:6px 14px 0}
 .daychip{
   display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;
-  background:color-mix(in srgb,var(--orange) 16%,transparent);color:var(--orange);
+  background:color-mix(in srgb,var(--pc) 16%,transparent);color:var(--pc);
   padding:3px 9px;border-radius:99px;
 }
 .cal-clear{font-size:13px;color:var(--blue)}
@@ -1271,7 +1286,7 @@ table.pr-tab th:first-child,table.pr-tab td:first-child{text-align:left}
       <div class="lbl" style="margin-top:4px">Quem</div>
       <div class="inset"><div class="frow">
         <label for="pl-member">Comercial</label>
-        <select id="pl-member" onchange="planFillSubs()"><option value="" disabled selected>Escolher</option></select>
+        <select id="pl-member" onchange="planFillSubs();renderCal()"><option value="" disabled selected>Escolher</option></select>
       </div></div>
 
       <div id="pl-sub-block" hidden>
@@ -1314,6 +1329,7 @@ table.pr-tab th:first-child,table.pr-tab td:first-child{text-align:left}
           <button class="cal-clear" onclick="planLimpar()">Limpar</button>
         </div>
         <div class="cal-foot" id="cal-chips" style="padding-top:0"></div>
+        <div class="cal-nota" id="cal-nota"></div>
       </div>
 
       <div class="lbl">Nota</div>
@@ -2089,7 +2105,7 @@ async function sincronizarAgora(){
     console.log('exemplo de linha:', planos[0]);
     console.log('visits:', visitas.length, 'linhas · exemplo:', visitas[0]);
   }
-  aplicarDados(onb || [], planos, visitas);
+  aplicarDados(onb || []);
   if(MODE==='tv'){ renderTV(); drawMap('tvmap'); } else { renderPhoneBoard(); if(maps['ph-map']) drawMap('ph-map'); }
   if(document.getElementById('map-scrim').classList.contains('on')) renderTrips();
   return true;
@@ -2112,25 +2128,104 @@ function paisDeObs(obs){
   return coordPais(primeira) ? primeira : null;
 }
 
-function aplicarDados(onb, plan, vis){
+/* ═══ Quem manda em cada dia ═══════════════════════════════════════
+   A folha só aceita acrescentos: corrigir um dia é voltar a gravá-lo.
+   Por isso, para cada par (pessoa, dia), vale o registo mais recente —
+   a hora de gravação decide e, entre linhas da mesma hora, a ordem na
+   folha, que é a ordem por que foram escritas.
+
+   Cada dia tem duas gavetas independentes: o local de trabalho
+   (fábrica, home office, viagem, férias) e a visita inversa, que é uma
+   marca por cima do local — receber alguém não é um local de trabalho.
+
+   A reposição é cronológica: percorrem-se os registos do mais antigo
+   para o mais recente e cada um escreve na sua gaveta. Linhas sem hora
+   (as antigas, anteriores a este campo) contam como as mais velhas,
+   que é o que são.
+
+   Só troca o local de um dia, nunca o apaga: a app não tem forma de
+   remover um dia planeado. Um dia marcado a mais tira-se apagando a
+   linha na própria folha. */
+
+function resolverPlaneamento(plan, vis){
+  const orfaos = new Map();
+  const acha = nome=>{
+    const m = acharMembro(nome);
+    if(!m){ const bruto=String(nome||'').trim(); if(bruto) orfaos.set(bruto,(orfaos.get(bruto)||0)+1); }
+    return m;
+  };
+
+  const eventos = [];
+  (plan||[]).forEach((row,i)=>{
+    const m = acha(row.memberName); if(!m) return;
+    const dia = diaISO(row.dia); if(!dia) return;
+    const k = chaveLocal(row.statusLabel); if(!k) return;
+    eventos.push({id:m.id, dia, t:normTime(row.time||''), ordem:i, acao:'local', k, row});
+  });
+  (vis||[]).forEach((row,i)=>{
+    const m = acha(row.memberName); if(!m) return;
+    const dia = diaISO(row.dia); if(!dia) return;
+    eventos.push({id:m.id, dia, t:normTime(row.time||''), ordem:i, acao:'visita', row});
+  });
+
+  eventos.sort((a,b)=> (a.t<b.t?-1:a.t>b.t?1:0) || (a.ordem-b.ordem));
+
+  const porPessoa = new Map();
+  eventos.forEach(ev=>{
+    if(!porPessoa.has(ev.id)) porPessoa.set(ev.id,new Map());
+    const dias = porPessoa.get(ev.id);
+    if(!dias.has(ev.dia)) dias.set(ev.dia,{local:null, localRow:null, visita:null});
+    const g = dias.get(ev.dia);
+    if(ev.acao==='local'){ g.local=ev.k; g.localRow=ev.row; }
+    else g.visita=ev.row;
+  });
+
+  return {porPessoa, orfaos};
+}
+
+/* A resolução é a mesma para o quadro, o calendário, o mapa e a análise.
+   Recalcula-se só quando as folhas mudam — `planos`/`visitas` recebem um
+   array novo a cada sincronização, por isso basta comparar a referência. */
+let planoCache=null, planoFonte=null;
+function planeamento(){
+  if(planoCache && planoFonte && planoFonte[0]===planos && planoFonte[1]===visitas) return planoCache;
+  planoFonte=[planos,visitas];
+  return planoCache=resolverPlaneamento(planos,visitas);
+}
+/** Map(dia -> {local, localRow, visita}) de uma pessoa, já resolvido. */
+const diasPlaneados = id=>planeamento().porPessoa.get(id) || new Map();
+
+/** Uma linha por dia de viagem ainda em vigor, com o dia já normalizado. */
+function diasDeViagem(){
+  const out=[];
+  planeamento().porPessoa.forEach((dias,id)=>dias.forEach((g,dia)=>{
+    if(g.local==='viagem' && g.localRow) out.push({...g.localRow, dia, memberId:id});
+  }));
+  return out.sort((a,b)=>a.dia<b.dia?-1:a.dia>b.dia?1:0);
+}
+
+/* `onb` são os check-ins do "Local de trabalho"; o planeamento entra já
+   resolvido por `planeamento()`, a partir de `planos` e `visitas`. */
+function aplicarDados(onb){
   nomesOrfaos.clear();                 // recontado a cada sincronização
   const acha = nome=>acharMembro(nome,true);
 
   const hoje = isoHoje(), mes = hoje.slice(0,7);
 
   /* ── Quem aparece em cada coluna hoje ─────────────────────────────
-     O "Planeamento de vários dias" decide: procura-se a linha cujo dia
-     é o de hoje e lê-se o local. O "Local de trabalho" ficou como
-     correção — um check-in feito HOJE sobrepõe-se ao planeado (um de
-     ontem já não conta, senão arrastava o estado para o dia seguinte).
-     Quem não tem plano para hoje nem check-in de hoje não aparece. */
+     O "Planeamento de vários dias" decide: lê-se o local que ficou em
+     vigor hoje — o registo mais recente desse dia, já resolvido. O
+     "Local de trabalho" ficou como correção — um check-in feito HOJE
+     sobrepõe-se ao planeado (um de ontem já não conta, senão arrastava
+     o estado para o dia seguinte). Quem não tem plano para hoje nem
+     check-in de hoje não aparece. */
+  const resolvido = planeamento();
+  resolvido.orfaos.forEach((n,nome)=>nomesOrfaos.set(nome,(nomesOrfaos.get(nome)||0)+n));
+
   const planoHoje = new Map();      // id -> {k, row}
-  plan.forEach(row=>{
-    const m = acha(row.memberName); if(!m) return;
-    if(diaISO(row.dia)!==hoje) return;
-    const k = chaveLocal(row.statusLabel);
-    if(k!=='fabrica' && k!=='home' && k!=='viagem' && k!=='ferias') return;
-    planoHoje.set(m.id,{k,row});
+  resolvido.porPessoa.forEach((dias,id)=>{
+    const g = dias.get(hoje);
+    if(g && g.local) planoHoje.set(id,{k:g.local, row:g.localRow});
   });
 
   const correcaoHoje = new Map();   // id -> {k, row, t} — o check-in mais recente de hoje
@@ -2154,31 +2249,24 @@ function aplicarDados(onb, plan, vis){
     }
   });
 
-  // ── planeamento do mês: alimenta o calendário pessoal e as datas do card ──
-  const viagemMes = new Map();     // id -> {dias:Set, linhas:[]}
-  const fabricaMes = new Map();
-  const homeMes = new Map();
-  const feriasMes = new Map();
-  plan.forEach(row=>{
-    const m = acha(row.memberName); if(!m) return;
-    const dia = diaISO(row.dia); if(!dia || !dia.startsWith(mes)) return;
-    const alvo = ehFabrica(row) ? fabricaMes : (ehHome(row) ? homeMes : (ehViagem(row) ? viagemMes : (ehFerias(row) ? feriasMes : null)));
-    if(!alvo) return;
-    if(!alvo.has(m.id)) alvo.set(m.id,{dias:new Set(),linhas:[]});
-    const v = alvo.get(m.id);
-    v.dias.add(dia);
-    v.linhas.push({...row, dia});
-  });
-
-  const visitasMes = new Map();
-  (vis||[]).forEach(row=>{
-    const m = acha(row.memberName); if(!m) return;
-    const dia = diaISO(row.dia); if(!dia || !dia.startsWith(mes)) return;
-    if(!visitasMes.has(m.id)) visitasMes.set(m.id,{dias:new Set(),linhas:[]});
-    const g = visitasMes.get(m.id);
-    g.dias.add(dia);
-    g.linhas.push({...row, dia});
-  });
+  /* ── planeamento do mês: alimenta o calendário pessoal e as datas do card ──
+     Cada dia entra num só local, o que ficou em vigor — um dia corrigido
+     de viagem para home office deixa de contar nos dois. */
+  const porTipoMes = {fabrica:new Map(), home:new Map(), viagem:new Map(), ferias:new Map(), visitas:new Map()};
+  const gavetaMes = (tipo,id)=>{
+    const mp = porTipoMes[tipo];
+    if(!mp.has(id)) mp.set(id,{dias:new Set(),linhas:[]});
+    return mp.get(id);
+  };
+  resolvido.porPessoa.forEach((dias,id)=>dias.forEach((g,dia)=>{
+    if(!dia.startsWith(mes)) return;
+    if(g.local && porTipoMes[g.local]){
+      const v = gavetaMes(g.local,id); v.dias.add(dia); v.linhas.push({...g.localRow, dia});
+    }
+    if(g.visita){
+      const v = gavetaMes('visitas',id); v.dias.add(dia); v.linhas.push({...g.visita, dia});
+    }
+  }));
 
   const resumoPlano = (v,tipo)=>{
     const dias=[...v.dias].sort();
@@ -2211,14 +2299,14 @@ function aplicarDados(onb, plan, vis){
       home:    b?b.home.size:0,
       viagem:  b?b.viagem.size:0,
       ferias:  b?b.ferias.size:0,
-      visitas: visitasMes.get(m.id)?visitasMes.get(m.id).dias.size:0
+      visitas: porTipoMes.visitas.get(m.id)?porTipoMes.visitas.get(m.id).dias.size:0
     };
 
-    const f  = fabricaMes.get(m.id);
-    const h  = homeMes.get(m.id);
-    const v  = viagemMes.get(m.id);
-    const fe = feriasMes.get(m.id);
-    const vi = visitasMes.get(m.id);
+    const f  = porTipoMes.fabrica.get(m.id);
+    const h  = porTipoMes.home.get(m.id);
+    const v  = porTipoMes.viagem.get(m.id);
+    const fe = porTipoMes.ferias.get(m.id);
+    const vi = porTipoMes.visitas.get(m.id);
     m.planoFabrica = f  ? resumoPlano(f,'fabrica')  : null;
     m.planoHome    = h  ? resumoPlano(h,'home')     : null;
     m.planoViagem  = v  ? resumoPlano(v,'viagem')   : null;
@@ -2264,18 +2352,32 @@ function renderCal(){
   const nDias=new Date(ano,mes+1,0).getDate();
   const hojeISO=iso(new Date());
 
+  /* O que já está planeado para esta pessoa, para se ver o que se vai
+     substituir. Sem isto o utilizador reescreve às cegas — e é o engano
+     que este ecrã existe para corrigir. */
+  const quem = parseInt(document.getElementById('pl-member').value)||0;
+  const jaTem = quem ? diasPlaneados(quem) : new Map();
+  const MARCA = {fabrica:'fab', home:'hom', viagem:'via', ferias:'fer'};
+
   let html=['S','T','Q','Q','S','S','D'].map(d=>`<div class="wd">${d}</div>`).join('');
   for(let i=0;i<desloca;i++) html+='<button class="off" disabled></button>';
   for(let dia=1;dia<=nDias;dia++){
     const d=new Date(ano,mes,dia), t=iso(d), fds=[0,6].includes(d.getDay());
-    const cls=[fds?'wknd':'', t===hojeISO?'hoje':'', t<hojeISO?'past':'', planSel.has(t)?'sel':''].filter(Boolean).join(' ');
-    html+=`<button class="${cls}" onclick="planToggle('${t}')">${dia}</button>`;
+    const g=jaTem.get(t);
+    const marca = g ? (g.local ? MARCA[g.local] : 'vis') : '';
+    const cls=[fds?'wknd':'', t===hojeISO?'hoje':'', t<hojeISO?'past':'', planSel.has(t)?'sel':'',
+               marca?'tem '+marca:''].filter(Boolean).join(' ');
+    const dica = g ? [g.local?STATUS[g.local].label:'', g.visita?'Visita inversa':''].filter(Boolean).join(' + ') : '';
+    html+=`<button class="${cls}"${dica?` title="${esc(dica)}"`:''} onclick="planToggle('${t}')">${dia}</button>`;
   }
   document.getElementById('cal-grid').innerHTML=html;
 
   const n=planSel.size;
   document.getElementById('cal-count').textContent = n ? `${n} ${n===1?'dia selecionado':'dias selecionados'}` : 'Nenhum dia selecionado';
   document.getElementById('cal-chips').innerHTML = [...planSel].sort().map(t=>`<span class="daychip">${ddmm(t)}</span>`).join('');
+  document.getElementById('cal-nota').textContent = quem
+    ? 'O ponto mostra o que já está planeado nesse dia. Gravar outra vez substitui o que lá estava.'
+    : 'Escolha o comercial para ver o que já está planeado.';
 }
 function planToggle(t){ planSel.has(t)?planSel.delete(t):planSel.add(t); planAlerta(''); renderCal(); }
 function planMes(n){ planRef=new Date(planRef.getFullYear(),planRef.getMonth()+n,1); renderCal(); }
@@ -2316,6 +2418,7 @@ function openPlanModal(tipo){
     document.getElementById('pl-client').placeholder = cfg.ph;
   }
   document.querySelector('#plan-body .cta').style.background = cfg.cor;
+  document.querySelector('#plan-body .cal').style.setProperty('--pc', cfg.cor);
   document.getElementById('plan-head').querySelector('.ico').style.color = cfg.cor;
   abrirPlan();
 }
@@ -2433,10 +2536,6 @@ const PAISES = {
   'austrália':[-25.3,133.8],'australia':[-25.3,133.8],'nova zelândia':[-40.9,174.9]
 };
 const semAcento = t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
-const ehViagem  = r=>chaveLocal(r.statusLabel)==='viagem';
-const ehFabrica = r=>chaveLocal(r.statusLabel)==='fabrica';
-const ehHome    = r=>chaveLocal(r.statusLabel)==='home';
-const ehFerias  = r=>chaveLocal(r.statusLabel)==='ferias';
 
 const coordPais = p=>{
   const t=String(p||'').trim().toLowerCase();
@@ -2585,12 +2684,12 @@ function renderTrips(){
   const titulo=tripRef.toLocaleDateString('pt-PT',{month:'long',year:'numeric'});
   document.getElementById('tcal-title').textContent=titulo.charAt(0).toUpperCase()+titulo.slice(1);
 
-  // agrupar por dia
+  // agrupar por dia — só as viagens que continuam em vigor
+  const viagens=diasDeViagem();
   const porDia=new Map();
-  planos.filter(ehViagem).forEach(r=>{
-    const dia=diaISO(r.dia); if(!dia) return;
-    if(!porDia.has(dia)) porDia.set(dia,[]);
-    porDia.get(dia).push(r);
+  viagens.forEach(r=>{
+    if(!porDia.has(r.dia)) porDia.set(r.dia,[]);
+    porDia.get(r.dia).push(r);
   });
 
   const primeiro=new Date(ano,mes,1);
@@ -2613,14 +2712,12 @@ function renderTrips(){
   drawTripMap();
 
   // lista: próximas viagens a partir de hoje
-  const futuras=planos
-    .filter(r=>ehViagem(r) && diaISO(r.dia)>=hoje)
-    .sort((a,b)=>String(a.dia).localeCompare(String(b.dia)));
+  const futuras=viagens.filter(r=>r.dia>=hoje);     // `diasDeViagem` já vem por ordem de dia
 
   // juntar dias seguidos do mesmo comercial/cliente num só bloco
   const blocos=[];
   futuras.forEach(r=>{
-    const dia=diaISO(r.dia);
+    const dia=r.dia;
     const ult=blocos[blocos.length-1];
     if(ult && ult.memberName===r.memberName && ult.cliente===r.cliente && ult.pais===r.pais && seguinte(ult.fim)===dia){
       ult.fim=dia; ult.n++;
@@ -2662,7 +2759,7 @@ function drawTripMap(){
   (markers['big-map']||[]).forEach(x=>mp.removeLayer(x)); markers['big-map']=[];
 
   const mes=`${tripRef.getFullYear()}-${String(tripRef.getMonth()+1).padStart(2,'0')}`;
-  const doMes=planos.filter(r=>ehViagem(r) && diaISO(r.dia).startsWith(mes));
+  const doMes=diasDeViagem().filter(r=>r.dia.startsWith(mes));
 
   // agrupar por país: um pin por destino, com quem lá vai
   const porPais=new Map();
@@ -2671,13 +2768,13 @@ function drawTripMap(){
     const chave=String(r.pais).trim();
     if(!porPais.has(chave)) porPais.set(chave,{coord:c,pais:chave,dias:new Set(),quem:new Map()});
     const g=porPais.get(chave);
-    g.dias.add(diaISO(r.dia));
+    g.dias.add(r.dia);
     const m=acharMembro(r.memberName);
     const chaveQuem = m ? 'id'+m.id : r.memberName;
     if(!g.quem.has(chaveQuem)) g.quem.set(chaveQuem,{membro:m,nome:shortName(r.memberName),clientes:new Set(),dias:new Set()});
     const q=g.quem.get(chaveQuem);
     q.clientes.add(String(r.cliente||'').trim());
-    q.dias.add(diaISO(r.dia));
+    q.dias.add(r.dia);
   });
 
   const bounds=[];
@@ -2747,22 +2844,12 @@ function renderPersonCal(){
   const titulo=pcalRef.toLocaleDateString('pt-PT',{month:'long',year:'numeric'});
   document.getElementById('pcal-title').textContent=titulo.charAt(0).toUpperCase()+titulo.slice(1);
 
-  // dias planeados desta pessoa, por tipo
-  const meus = planos.filter(r=>{
-    const p=acharMembro(r.memberName);
-    return p && p.id===m.id;
-  });
+  // dias planeados desta pessoa, por tipo — só o que ficou em vigor em cada dia
   const fab=new Map(), hom=new Map(), via=new Map(), vis=new Map(), fer=new Map();
-  meus.forEach(r=>{
-    const dia=diaISO(r.dia); if(!dia) return;
-    if(ehFabrica(r)) fab.set(dia,r);
-    else if(ehHome(r)) hom.set(dia,r);
-    else if(ehViagem(r)) via.set(dia,r);
-    else if(ehFerias(r)) fer.set(dia,r);
-  });
-  visitas.forEach(r=>{
-    const p=acharMembro(r.memberName); if(!p || p.id!==m.id) return;
-    const dia=diaISO(r.dia); if(dia) vis.set(dia,r);
+  const gavetas={fabrica:fab, home:hom, viagem:via, ferias:fer};
+  diasPlaneados(m.id).forEach((g,dia)=>{
+    if(g.local && gavetas[g.local]) gavetas[g.local].set(dia,g.localRow);
+    if(g.visita) vis.set(dia,g.visita);
   });
 
   const conta = mp=>[...mp.keys()].filter(d=>d.startsWith(chaveMes)).length;
@@ -2879,24 +2966,13 @@ const diasUteis = d=>new Set([...d.fabrica,...d.home,...d.viagem]).size;
     receber alguém não é um local de trabalho, acontece na fábrica. */
 function mapaPlaneado(mes){
   const porPessoa=new Map();
-  const juntar=(id,dia,status,forcar)=>{
+  planeamento().porPessoa.forEach((dias,id)=>dias.forEach((g,dia)=>{
+    if(mes && !dia.startsWith(mes)) return;
+    const k = g.local || (g.visita ? 'visitas' : null);
+    if(!k) return;
     if(!porPessoa.has(id)) porPessoa.set(id,new Map());
-    const mp=porPessoa.get(id);
-    if(forcar || !mp.has(dia)) mp.set(dia,status);
-  };
-  (planos||[]).forEach(r=>{
-    const m=acharMembro(r.memberName); if(!m) return;
-    const dia=diaISO(r.dia); if(!dia) return;
-    if(mes && !dia.startsWith(mes)) return;
-    const k=chaveLocal(r.statusLabel); if(!k) return;
-    juntar(m.id,dia,k,true);
-  });
-  (visitas||[]).forEach(r=>{
-    const m=acharMembro(r.memberName); if(!m) return;
-    const dia=diaISO(r.dia); if(!dia) return;
-    if(mes && !dia.startsWith(mes)) return;
-    juntar(m.id,dia,'visitas',false);
-  });
+    porPessoa.get(id).set(dia,k);
+  }));
   return porPessoa;
 }
 
@@ -2926,12 +3002,10 @@ function buildInsights(mes){
     const chave=m.id+'|'+dia, atual=porDia.get(chave);
     if(!atual || row.time>atual.time) porDia.set(chave,{id:m.id,dia,status:row.status,obs:row.obs,time:row.time});
   });
-  (visitas||[]).forEach(r=>{
-    const m=acharMembro(r.memberName); if(!m) return;
-    const dia=diaISO(r.dia); if(!dia) return;
+  planeamento().porPessoa.forEach((dias,id)=>dias.forEach((g,dia)=>{
     if(mes && !dia.startsWith(mes)) return;
-    linha(m.id).visitas.add(dia);
-  });
+    if(g.visita) linha(id).visitas.add(dia);
+  }));
 
   /* ── O estado de cada dia ──────────────────────────────────────────
      Mesma regra do quadro: o "Planeamento de vários dias" define o dia,
@@ -2955,12 +3029,10 @@ function buildInsights(mes){
 
   // país de cada dia de viagem: o planeamento manda, o check-in serve de reserva
   const paisDia=new Map();
-  (planos||[]).forEach(r=>{
-    if(!ehViagem(r) || !r.pais) return;
-    const m=acharMembro(r.memberName); if(!m) return;
-    const dia=diaISO(r.dia); if(!dia || (mes && !dia.startsWith(mes))) return;
-    paisDia.set(m.id+'|'+dia, r.pais);
-  });
+  planeamento().porPessoa.forEach((dias,id)=>dias.forEach((g,dia)=>{
+    if(mes && !dia.startsWith(mes)) return;
+    if(g.local==='viagem' && g.localRow && g.localRow.pais) paisDia.set(id+'|'+dia, g.localRow.pais);
+  }));
   porDia.forEach(r=>{
     if(r.status!=='viagem') return;
     const p=paisDeObs(r.obs), chave=r.id+'|'+r.dia;
