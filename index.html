@@ -2516,7 +2516,7 @@ function agoraISO(){
 let tripRef = new Date();
 
 /* Coordenadas aproximadas por país, para colocar as viagens no mapa. */
-const PAISES = {
+/*const PAISES = {
   'portugal':[39.5,-8.0],'espanha':[40.4,-3.7],'spain':[40.4,-3.7],'frança':[46.6,2.4],'franca':[46.6,2.4],
   'france':[46.6,2.4],'itália':[41.9,12.5],'italia':[41.9,12.5],'italy':[41.9,12.5],
   'alemanha':[51.2,10.4],'germany':[51.2,10.4],'reino unido':[54.0,-2.0],'inglaterra':[52.5,-1.5],'uk':[54.0,-2.0],
@@ -2534,7 +2534,28 @@ const PAISES = {
   'japão':[36.2,138.3],'japao':[36.2,138.3],'china':[35.9,104.2],'coreia do sul':[36.5,127.9],
   'singapura':[1.35,103.8],'tailândia':[15.9,100.99],'vietname':[14.1,108.3],'indonésia':[-0.8,113.9],
   'austrália':[-25.3,133.8],'australia':[-25.3,133.8],'nova zelândia':[-40.9,174.9]
+};*/
+
+const PAISES = {
+  'portugal':[39.5,-8.0],'espanha':[40.4,-3.7],'spain':[40.4,-3.7],'frança':[46.6,2.4],'franca':[46.6,2.4],
+  'france':[46.6,2.4],'itália':[41.9,12.5],'italia':[41.9,12.5],'italy':[41.9,12.5],
+  'alemanha':[51.2,10.4],'germany':[51.2,10.4],'reino unido':[54.0,-2.0],'inglaterra':[52.5,-1.5],'uk':[54.0,-2.0],
+  'países baixos':[52.2,5.3],'paises baixos':[52.2,5.3],'holanda':[52.2,5.3],'bélgica':[50.6,4.6],'belgica':[50.6,4.6],
+  'polónia':[52.1,19.4],'polonia':[52.1,19.4],'suíça':[46.8,8.2],'suica':[46.8,8.2],'áustria':[47.6,14.1],'austria':[47.6,14.1],
+  'dinamarca':[56.1,9.5],'suécia':[60.1,15.6],'suecia':[60.1,15.6],'noruega':[61.0,9.0],'finlândia':[64.0,26.0],
+  'irlanda':[53.2,-8.0],'república checa':[49.8,15.5],'chéquia':[49.8,15.5],'hungria':[47.1,19.5],
+  'roménia':[45.9,25.0],'grécia':[39.0,22.0],'turquia':[39.0,35.2],'marrocos':[31.8,-7.1],'argélia':[28.0,2.6],
+  'tunísia':[34.0,9.5],'angola':[-11.2,17.9],'moçambique':[-18.7,35.5],'áfrica do sul':[-30.6,22.9],
+  'estados unidos':[39.8,-98.6],'eua':[39.8,-98.6],'usa':[39.8,-98.6],'canadá':[56.1,-106.3],'canada':[56.1,-106.3],
+  'méxico':[23.6,-102.6],'mexico':[23.6,-102.6],'brasil':[-14.2,-51.9],'brazil':[-14.2,-51.9],
+  'chile':[-35.7,-71.5],'argentina':[-38.4,-63.6],'colômbia':[4.6,-74.3],'peru':[-9.2,-75.0],
+  'emirados árabes unidos':[24.0,54.0],'emirados':[24.0,54.0],'arábia saudita':[23.9,45.1],'arabia saudita':[23.9,45.1],
+  'qatar':[25.4,51.2],'israel':[31.0,34.9],'índia':[20.6,79.0],'india':[20.6,79.0],
+  'japão':[36.2,138.3],'japao':[36.2,138.3],'china':[35.9,104.2],'taiwan':[23.7,121.0],'coreia do sul':[36.5,127.9],
+  'singapura':[1.35,103.8],'tailândia':[15.9,100.99],'vietname':[14.1,108.3],'indonésia':[-0.8,113.9],
+  'austrália':[-25.3,133.8],'australia':[-25.3,133.8],'nova zelândia':[-40.9,174.9]
 };
+     
 const semAcento = t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
 
 const coordPais = p=>{
