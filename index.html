@@ -2626,7 +2626,7 @@ function diaISO(v){
 }
 
 /* Nomes oficiais mostrados no formulário — todos têm coordenadas em PAISES. */
-const PAISES_LISTA = [
+/*const PAISES_LISTA = [
   'Alemanha','Angola','Arábia Saudita','Argentina','Argélia','Austrália','Áustria','Bélgica','Brasil',
   'Canadá','Chile','China','Colômbia','Coreia do Sul','Dinamarca','Emirados Árabes Unidos','Espanha',
   'Estados Unidos','Finlândia','França','Grécia','Hungria','Índia','Indonésia','Irlanda','Israel',
@@ -2660,7 +2660,59 @@ const PAIS_FUSO = {
   'reino unido':'Europe/London', 'republica checa':'Europe/Prague', romenia:'Europe/Bucharest', singapura:'Asia/Singapore',
   suecia:'Europe/Stockholm', suica:'Europe/Zurich', tailandia:'Asia/Bangkok', tunisia:'Africa/Tunis', turquia:'Europe/Istanbul',
   vietname:'Asia/Ho_Chi_Minh', 'africa do sul':'Africa/Johannesburg', angola:'Africa/Luanda', argelia:'Africa/Algiers'
+};*/
+
+
+
+/*15/10/2026*/
+
+     
+const PAISES_LISTA = [
+  'Alemanha','Angola','Arábia Saudita','Argentina','Argélia','Austrália','Áustria','Bélgica','Brasil',
+  'Canadá','Chile','China','Colômbia','Coreia do Sul','Dinamarca','Emirados Árabes Unidos','Espanha',
+  'Estados Unidos','Finlândia','França','Grécia','Hungria','Índia','Indonésia','Irlanda','Israel',
+  'Itália','Japão','Marrocos','México','Moçambique','Noruega','Nova Zelândia','Países Baixos','Peru',
+  'Polónia','Portugal','Qatar','Reino Unido','República Checa','Roménia','Singapura','Suécia','Suíça',
+  'Tailândia','Taiwan','Tunísia','Turquia','Vietname','África do Sul'
+].sort((a,b)=>a.localeCompare(b,'pt'));
+
+const PAIS_ISO = {
+  alemanha:'DE', angola:'AO', 'arabia saudita':'SA', argentina:'AR', argelia:'DZ', australia:'AU', austria:'AT',
+  belgica:'BE', brasil:'BR', canada:'CA', chile:'CL', china:'CN', colombia:'CO', 'coreia do sul':'KR', dinamarca:'DK',
+  'emirados arabes unidos':'AE', espanha:'ES', 'estados unidos':'US', finlandia:'FI', franca:'FR', grecia:'GR',
+  hungria:'HU', india:'IN', indonesia:'ID', irlanda:'IE', israel:'IL', italia:'IT', japao:'JP', marrocos:'MA',
+  mexico:'MX', mocambique:'MZ', noruega:'NO', 'nova zelandia':'NZ', 'paises baixos':'NL', peru:'PE', polonia:'PL',
+  portugal:'PT', qatar:'QA', 'reino unido':'GB', 'republica checa':'CZ', romenia:'RO', singapura:'SG', suecia:'SE',
+  suica:'CH', taiwan:'TW', tanzania:'TZ', tailandia:'TH', tunisia:'TN', turquia:'TR', vietname:'VN', 'africa do sul':'ZA'
 };
+
+const bandeiraPais = pais=>{
+  const iso=PAIS_ISO[semAcento(pais)];
+  return iso ? [...iso].map(c=>String.fromCodePoint(127397+c.charCodeAt())).join('') : '';
+};
+
+const PAIS_FUSO = {
+  alemanha:'Europe/Berlin', 'arabia saudita':'Asia/Riyadh', argentina:'America/Argentina/Buenos_Aires', australia:'Australia/Sydney',
+  austria:'Europe/Vienna', belgica:'Europe/Brussels', brasil:'America/Sao_Paulo', canada:'America/Toronto', chile:'America/Santiago',
+  china:'Asia/Shanghai', colombia:'America/Bogota', 'coreia do sul':'Asia/Seoul', dinamarca:'Europe/Copenhagen',
+  'emirados arabes unidos':'Asia/Dubai', espanha:'Europe/Madrid', 'estados unidos':'America/New_York', finlandia:'Europe/Helsinki',
+  franca:'Europe/Paris', grecia:'Europe/Athens', hungria:'Europe/Budapest', india:'Asia/Kolkata', indonesia:'Asia/Jakarta',
+  irlanda:'Europe/Dublin', israel:'Asia/Jerusalem', italia:'Europe/Rome', japao:'Asia/Tokyo', marrocos:'Africa/Casablanca',
+  mexico:'America/Mexico_City', mocambique:'Africa/Maputo', noruega:'Europe/Oslo', 'nova zelandia':'Pacific/Auckland',
+  'paises baixos':'Europe/Amsterdam', peru:'America/Lima', polonia:'Europe/Warsaw', portugal:'Europe/Lisbon', qatar:'Asia/Qatar',
+  'reino unido':'Europe/London', 'republica checa':'Europe/Prague', romenia:'Europe/Bucharest', singapura:'Asia/Singapore',
+  suecia:'Europe/Stockholm', suica:'Europe/Zurich', taiwan:'Asia/Taipei', tailandia:'Asia/Bangkok', tunisia:'Africa/Tunis', turquia:'Europe/Istanbul',
+  vietname:'Asia/Ho_Chi_Minh', 'africa do sul':'Africa/Johannesburg', angola:'Africa/Luanda', argelia:'Africa/Algiers'
+};
+
+
+
+/*------------------------------------------------------*/
+
+
+     
+
+     
 function minutosFuso(fuso,agora){
   const parte=new Intl.DateTimeFormat('en-US',{timeZone:fuso,timeZoneName:'longOffset'}).formatToParts(agora)
     .find(p=>p.type==='timeZoneName');
