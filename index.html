@@ -591,6 +591,8 @@ html.tv #pcal-sheet{zoom:clamp(1,.115vh,2.2)}
 #pcal-lista .linha b{color:var(--text);font-weight:600;min-width:96px;font-variant-numeric:tabular-nums}
 #pcal-lista .linha span{color:var(--text-2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #pcal-lista .linha .sub{flex:none;font-size:12px;font-weight:500;color:var(--purple);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38%}
+#pcal-lista .pcal-del{flex:none;border:0;border-radius:999px;padding:5px 11px;font-family:inherit;font-size:12px;font-weight:600;line-height:1;color:var(--red);background:color-mix(in srgb,var(--red) 14%,transparent);cursor:pointer}
+#pcal-lista .pcal-del:disabled{opacity:.5;cursor:default}
 #pcal-vazio{padding:20px 4px;font-size:13px;color:var(--text-2);text-align:center}
 /* ── Planeamento: botões, modal e calendário ──────────── */
 .qr .qaction{flex-direction:column;gap:.8rem}
@@ -2143,9 +2145,11 @@ function paisDeObs(obs){
    (as antigas, anteriores a este campo) contam como as mais velhas,
    que é o que são.
 
-   Só troca o local de um dia, nunca o apaga: a app não tem forma de
-   remover um dia planeado. Um dia marcado a mais tira-se apagando a
-   linha na própria folha. */
+   Para remover dias, a app grava uma linha de anulação (ANULADO): ao
+   chegar a vez dela, limpa a gaveta desse dia. Assim a remoção chega a
+   todos os aparelhos sem apagar nada na folha. */
+const ANULADO = 'ANULADO';
+const eAnulacao = v=>String(v||'').trim().toUpperCase()===ANULADO;
 
 function resolverPlaneamento(plan, vis){
   const orfaos = new Map();
@@ -2159,13 +2163,14 @@ function resolverPlaneamento(plan, vis){
   (plan||[]).forEach((row,i)=>{
     const m = acha(row.memberName); if(!m) return;
     const dia = diaISO(row.dia); if(!dia) return;
-    const k = chaveLocal(row.statusLabel); if(!k) return;
-    eventos.push({id:m.id, dia, t:normTime(row.time||''), ordem:i, acao:'local', k, row});
+    const anula = eAnulacao(row.statusLabel);
+    const k = anula ? null : chaveLocal(row.statusLabel); if(!k && !anula) return;
+    eventos.push({id:m.id, dia, t:normTime(row.time||''), ordem:i, acao:'local', k, row, anula});
   });
   (vis||[]).forEach((row,i)=>{
     const m = acha(row.memberName); if(!m) return;
     const dia = diaISO(row.dia); if(!dia) return;
-    eventos.push({id:m.id, dia, t:normTime(row.time||''), ordem:i, acao:'visita', row});
+    eventos.push({id:m.id, dia, t:normTime(row.time||''), ordem:i, acao:'visita', row, anula:eAnulacao(row.visita)});
   });
 
   eventos.sort((a,b)=> (a.t<b.t?-1:a.t>b.t?1:0) || (a.ordem-b.ordem));
@@ -2176,8 +2181,8 @@ function resolverPlaneamento(plan, vis){
     const dias = porPessoa.get(ev.id);
     if(!dias.has(ev.dia)) dias.set(ev.dia,{local:null, localRow:null, visita:null});
     const g = dias.get(ev.dia);
-    if(ev.acao==='local'){ g.local=ev.k; g.localRow=ev.row; }
-    else g.visita=ev.row;
+    if(ev.acao==='local'){ g.local=ev.anula?null:ev.k; g.localRow=ev.anula?null:ev.row; }
+    else g.visita=ev.anula?null:ev.row;
   });
 
   return {porPessoa, orfaos};
@@ -2967,17 +2972,45 @@ function renderPersonCal(){
                : (r.obs||'Na fábrica');
     const sub = tipo==='ferias' && r.subName && r.subName!=='-' ? r.subName : '';
     const ult=blocos[blocos.length-1];
-    if(ult && ult.tipo===tipo && ult.desc===desc && ult.sub===sub && seguinte(ult.fim)===d){ ult.fim=d; ult.n++; }
-    else blocos.push({tipo,desc,sub,ini:d,fim:d,n:1});
+    if(ult && ult.tipo===tipo && ult.desc===desc && ult.sub===sub && seguinte(ult.fim)===d){ ult.fim=d; ult.n++; ult.dias.push(d); }
+    else blocos.push({tipo,desc,sub,ini:d,fim:d,n:1,dias:[d]});
   });
 
   const corBloco = t=>t==='viagem'?'var(--orange)':(t==='visitas'?'var(--visit)':(t==='ferias'?'var(--purple)':(t==='home'?'var(--blue)':'var(--green)')));
-  document.getElementById('pcal-lista').innerHTML = blocos.length ? blocos.map(b=>`
+  pcalBlocos = blocos;
+  document.getElementById('pcal-lista').innerHTML = blocos.length ? blocos.map((b,i)=>`
     <div class="linha">
       <b style="color:${corBloco(b.tipo)}">${ddmm(b.ini)}${b.fim!==b.ini?` – ${ddmm(b.fim)}`:''}</b>
       <span>${esc(b.desc)}</span>
       ${b.sub?`<span class="sub">Substituído por ${esc(shortName(b.sub))}</span>`:''}
+      ${b.tipo==='visitas'?`<button type="button" class="pcal-del" onclick="removerBloco(${i},this)" title="Remover esta visita">Remover</button>`:''}
     </div>`).join('') : `<div id="pcal-vazio">Sem planeamento neste mês.</div>`;
+}
+
+/* Remove uma visita inversa do calendário pessoal: grava na folha das
+   visitas uma linha de anulação para cada dia (ver `resolverPlaneamento`).
+   Só as visitas têm esta opção. */
+let pcalBlocos = [];
+async function removerBloco(i,btn){
+  const b = pcalBlocos[i], m = members.find(x=>x.id===pcalId);
+  if(!b || !m || b.tipo!=='visitas') return;
+  const quando = `${ddmm(b.ini)}${b.fim!==b.ini?` – ${ddmm(b.fim)}`:''}`;
+  if(!confirm(`Remover "${b.desc}" (${quando}) de ${shortName(m.name)}?`)) return;
+
+  const corpo = { tipo:'visits', time:agoraISO(), memberName:m.name, pais:'', visita:ANULADO, logo:'', dias:b.dias };
+
+  btn.disabled = true; btn.textContent = 'A remover…';
+  try{
+    const r = await fetch(GOOGLE_SCRIPT_URL,{
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(corpo)
+    });
+    const d = await r.json();
+    if(d && d.status==='success'){ await sincronizar(); renderPersonCal(); return; }
+    alert(d && d.message ? d.message : 'A folha devolveu erro.');
+  }catch(err){
+    alert('Sem ligação à folha. Tente outra vez.');
+  }
+  btn.disabled = false; btn.textContent = 'Remover';
 }
 
 /* ═══ Análise & Insights da equipa ═══
