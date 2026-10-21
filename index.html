@@ -593,6 +593,16 @@ html.tv #pcal-sheet{zoom:clamp(1,.115vh,2.2)}
 #pcal-lista .linha .sub{flex:none;font-size:12px;font-weight:500;color:var(--purple);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38%}
 #pcal-lista .pcal-del{flex:none;border:0;border-radius:999px;padding:5px 11px;font-family:inherit;font-size:12px;font-weight:600;line-height:1;color:var(--red);background:color-mix(in srgb,var(--red) 14%,transparent);cursor:pointer}
 #pcal-lista .pcal-del:disabled{opacity:.5;cursor:default}
+#pcal-grid .d.edit{cursor:pointer}
+#pcal-grid .d.edit:hover{filter:brightness(1.12)}
+#pcal-grid .d.escolhido{outline:2px solid var(--text);outline-offset:-2px}
+#pcal-edit{margin-top:10px;padding:12px 14px;border-radius:16px;background:var(--fill);font-size:13px}
+#pcal-edit .t{color:var(--text-2);margin-bottom:9px}
+#pcal-edit .t b{color:var(--text)}
+#pcal-edit .ops{display:flex;flex-wrap:wrap;gap:6px}
+#pcal-edit .ops button{border:0;border-radius:999px;padding:7px 12px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;
+  color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent)}
+#pcal-edit .ops button:disabled{opacity:.35;cursor:default}
 #pcal-vazio{padding:20px 4px;font-size:13px;color:var(--text-2);text-align:center}
 /* ── Planeamento: botões, modal e calendário ──────────── */
 .qr .qaction{flex-direction:column;gap:.8rem}
@@ -1265,6 +1275,7 @@ table.pr-tab th:first-child,table.pr-tab td:first-child{text-align:left}
         <button class="cal-nav" onclick="pcalMes(1)" aria-label="Mês seguinte">›</button>
       </div>
       <div class="tcal" id="pcal-grid"></div>
+      <div id="pcal-edit" hidden></div>
       <div id="pcal-legenda">
         <span><i style="background:var(--green)"></i> Na fábrica</span>
         <span><i style="background:var(--blue)"></i> Home office</span>
@@ -2446,6 +2457,7 @@ function preverLogo(){
 }
 
 function abrirPlan(){
+  pcalVoltar=null;     // só a edição a partir do calendário pessoal o volta a pôr
   document.getElementById('pl-member').innerHTML='<option value="" disabled selected>Escolher</option>'+
     members.map(m=>`<option value="${m.id}">${esc(shortName(m.name))}</option>`).join('');
   document.getElementById('pl-client').value='';
@@ -2502,7 +2514,12 @@ async function submitPlan(){
     const d=await r.json();
     if(d && d.status==='success'){
       btn.textContent=`${dias.length} dia(s) guardado(s) ✓`;
-      setTimeout(()=>{ btn.textContent=txt; btn.disabled=false; closePlanModal(); sincronizar(); },1600);
+      setTimeout(async ()=>{
+        btn.textContent=txt; btn.disabled=false; closePlanModal();
+        const voltar=pcalVoltar; pcalVoltar=null;
+        await sincronizar();
+        if(voltar){ const ref=planRef; openPersonCal(voltar); pcalRef=new Date(ref.getFullYear(),ref.getMonth(),1); renderPersonCal(); }
+      },1600);
       return;
     }
     planAlerta(d && d.message ? d.message : 'A folha devolveu erro.');
@@ -2897,11 +2914,12 @@ function seguinte(t){
 }
 
 /* ═══ Calendário individual ═══ */
-let pcalId=null, pcalRef=new Date();
+let pcalId=null, pcalRef=new Date(), pcalDia=null;
+let pcalVoltar=null;   // pessoa cujo calendário reabre depois de gravar uma edição
 
 function openPersonCal(id){
   const m=members.find(x=>x.id===id); if(!m) return;
-  pcalId=id; pcalRef=new Date();
+  pcalId=id; pcalRef=new Date(); pcalDia=null;
 
   document.getElementById('pcal-av').innerHTML =
     `<span class="ini">${initials(m.name)}</span>${m.photo?`<img src="${esc(m.photo)}" alt="" onerror="this.remove()">`:''}`;
@@ -2913,7 +2931,33 @@ function openPersonCal(id){
   if(!visitas.length) lerAccao('visitas').then(r=>{ if(r){ visitas=r; renderPersonCal(); } });
 }
 function closePersonCal(){ document.getElementById('pcal-scrim').classList.remove('on'); }
-function pcalMes(n){ pcalRef=new Date(pcalRef.getFullYear(),pcalRef.getMonth()+n,1); renderPersonCal(); }
+function pcalMes(n){ pcalRef=new Date(pcalRef.getFullYear(),pcalRef.getMonth()+n,1); pcalDia=null; renderPersonCal(); }
+
+/* ── Editar o local de um dia já planeado ──
+   Clicar num dia com local mostra "Mudar para…". A escolha abre o
+   planeamento já preenchido com a pessoa e o dia: gravar substitui o
+   local desse dia (vale o registo mais recente). */
+function pcalEscolherDia(t){ pcalDia = pcalDia===t ? null : t; renderPersonCal(); }
+function renderPcalEdit(){
+  const box=document.getElementById('pcal-edit');
+  const g = pcalDia ? diasPlaneados(pcalId).get(pcalDia) : null;
+  if(!g || !g.local){ box.hidden=true; box.innerHTML=''; return; }
+  const ops=['fabrica','home','viagem','ferias'].map(k=>
+    `<button type="button" style="--c:${STATUS[k].c}" ${k===g.local&&k!=='viagem'?'disabled':''} onclick="pcalMudarPara('${k}')">${esc(STATUS[k].label)}</button>`).join('');
+  box.innerHTML=`<div class="t"><b>${ddmm(pcalDia)}</b> · agora: ${esc(STATUS[g.local].label)} — mudar para:</div><div class="ops">${ops}</div>`;
+  box.hidden=false;
+}
+function pcalMudarPara(k){
+  const id=pcalId, dia=pcalDia; if(!id || !dia) return;
+  closePersonCal();
+  openPlanModal(k);
+  document.getElementById('pl-member').value=String(id);
+  planFillSubs();
+  planSel.clear(); planSel.add(dia);
+  planRef=new Date(dia+'T00:00:00');
+  renderCal();
+  pcalVoltar=id;
+}
 
 function renderPersonCal(){
   const m=members.find(x=>x.id===pcalId); if(!m) return;
@@ -2955,9 +2999,11 @@ function renderPersonCal(){
                : e ? (e.obs||'De férias')
                : h ? (h.obs||'Home office')
                : (f ? (f.obs||'Na fábrica') : '');
-    html+=`<div class="d ${cls}" title="${esc(dica)}"><span class="num">${dia}</span>${marca}</div>`;
+    const editavel = !!(v||f||e||h);          // só se edita um dia com local planeado
+    html+=`<div class="d ${cls}${editavel?' edit':''}${t===pcalDia?' escolhido':''}" title="${esc(dica)}"${editavel?` onclick="pcalEscolherDia('${t}')"`:''}><span class="num">${dia}</span>${marca}</div>`;
   }
   document.getElementById('pcal-grid').innerHTML=html;
+  renderPcalEdit();
 
   // lista do mês, agrupada por blocos seguidos
   const doMes=[...new Set([...fab.keys(),...hom.keys(),...via.keys(),...vis.keys(),...fer.keys()])].filter(d=>d.startsWith(chaveMes)).sort();
