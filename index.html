@@ -1701,18 +1701,21 @@ function posicaoDe(m){
    afastar tanto o zoom que a faixa do mundo fica mais baixa do que o cartao.
    Nesse caso o Leaflet continua a centrar na latitude media dos pins (~40 N),
    a faixa cai para baixo e sobra um vazio grande em cima. Aqui voltamos a
-   centrar o mundo no contentor; se o mundo for mais alto que o contentor,
-   apenas impedimos que sobrem margens vazias em cima/baixo. */
+   preencher o contentor: se o mundo for mais baixo que o cartao (cartao
+   estreito e alto), sobe-se o zoom ate o mundo cobrir a altura toda,
+   mantendo o centro horizontal dos pins; depois impedimos que sobrem
+   margens vazias em cima/baixo. */
 function centrarMundo(mapa){
-  const z=mapa.getZoom(), alt=mapa.getSize().y;
-  const mundo=mapa.getPixelWorldBounds();          // limites do mundo em pixeis, neste zoom
-  if(!mundo || !alt) return;
-  const topo=mundo.min.y, base=mundo.max.y, altMundo=base-topo;
+  let z=mapa.getZoom();
+  const alt=mapa.getSize().y;
+  if(!alt) return;
+  const altMundo0=mapa.getPixelWorldBounds(z).getSize().y;
+  if(altMundo0<alt) z += Math.ceil(Math.log2(alt/altMundo0));   // zoom inteiro: tiles sem reescalar
+  const mundo=mapa.getPixelWorldBounds(z);          // limites do mundo em pixeis, neste zoom
+  const topo=mundo.min.y, base=mundo.max.y;
   const c=mapa.project(mapa.getCenter(),z);
-  const y = (altMundo<=alt)
-    ? (topo+base)/2                                          // mundo mais baixo: centra-o
-    : Math.min(Math.max(c.y, topo+alt/2), base-alt/2);        // mundo mais alto: sem margens vazias
-  if(Math.abs(y-c.y)<1) return;                              // ja esta centrado
+  const y=Math.min(Math.max(c.y, topo+alt/2), base-alt/2);    // sem margens vazias em cima/baixo
+  if(z===mapa.getZoom() && Math.abs(y-c.y)<1) return;        // ja esta bem
   mapa.setView(mapa.unproject([c.x,y],z), z, {animate:false});
 }
 
@@ -2011,6 +2014,7 @@ addEventListener('resize',()=>{
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(()=>{
     Object.values(maps).forEach(m=>m.invalidateSize());
+    if(MODE==='tv' && maps.tvmap) drawMap('tvmap');   // novo tamanho do cartao: volta a enquadrar e a preencher
     if(forcedMode) return;                 // o utilizador (ou o URL) escolheu o modo
     const want = detectMode();
     if(want !== MODE) applyMode(want);     // ex.: tablet a rodar entre retrato e paisagem
