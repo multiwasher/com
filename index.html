@@ -100,7 +100,7 @@ html.tv body{
 .tvbar .theme:hover{background:var(--fill-2);color:var(--text)}
 .tvbar .theme:active{transform:scale(.93)}
 
-.tvgrid{flex:1;min-height:0;display:grid;grid-template-columns:.8fr .8fr .88fr .8fr .8fr 1.27fr;gap:1.2rem}
+.tvgrid{flex:1;min-height:0;display:grid;grid-template-columns:.8fr .8fr .88fr .8fr .8fr 1.12fr;gap:1.2rem}
 
 .col{background:var(--surface);border-radius:1.6rem;display:flex;flex-direction:column;min-height:0;min-width:0;border-top:.35rem solid var(--c);box-shadow:var(--shadow)}
 .col-head{display:flex;align-items:center;gap:.9rem;padding:1.2rem 1.3rem 1rem}
@@ -154,11 +154,11 @@ html.tv body{
 /* ── Coluna com muitos cards: passa a 2 colunas (evita overflow) ──
    A coluna tambem duplica de largura na grelha (.tvgrid.f2), para os
    cards nao ficarem estreitos; as restantes cedem um pouco de espaco. */
-.tvgrid.f2-0{grid-template-columns:1.6fr .8fr .88fr .8fr .8fr 1.27fr}  /* fabrica */
-.tvgrid.f2-1{grid-template-columns:.8fr 1.6fr .88fr .8fr .8fr 1.27fr}  /* home */
-.tvgrid.f2-2{grid-template-columns:.8fr .8fr 1.76fr .8fr .8fr 1.19fr}  /* viagem */
-.tvgrid.f2-3{grid-template-columns:.8fr .8fr .88fr 1.6fr .8fr 1.27fr}  /* ferias */
-.tvgrid.f2-multi{grid-template-columns:1.2fr 1.2fr 1.32fr 1.2fr .8fr 1.23fr}  /* multiplas duplas */
+.tvgrid.f2-0{grid-template-columns:1.6fr .8fr .88fr .8fr .8fr 1.12fr}  /* fabrica */
+.tvgrid.f2-1{grid-template-columns:.8fr 1.6fr .88fr .8fr .8fr 1.12fr}  /* home */
+.tvgrid.f2-2{grid-template-columns:.8fr .8fr 1.76fr .8fr .8fr 1.04fr}  /* viagem */
+.tvgrid.f2-3{grid-template-columns:.8fr .8fr .88fr 1.6fr .8fr 1.12fr}  /* ferias */
+.tvgrid.f2-multi{grid-template-columns:1.2fr 1.2fr 1.32fr 1.2fr .8fr 1.08fr}  /* multiplas duplas */
 .col-body.duas{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-content:start;gap:.6rem}
 .col-body.duas .p{padding:clamp(.55rem,9cqh,1.2rem) clamp(.5rem,8.5cqh,1.2rem) clamp(.45rem,7cqh,1rem);min-height:clamp(10rem,22cqh,14rem);border-radius:1.15rem;gap:clamp(.3rem,5.5cqh,.8rem)}
 .col-body.duas .p .ptop{gap:clamp(.35rem,6cqh,.8rem)}
