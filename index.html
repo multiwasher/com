@@ -168,7 +168,7 @@ html.tv body{
 .col-body.duas .p .meter{height:clamp(.25rem,5.5cqh,.8rem)}
 .col-body.duas .p .days{font-size:clamp(.65rem,8cqh,1.1rem)}
 
-.rail{display:flex;flex-direction:column;gap:1.2rem;min-height:0}
+.rail{display:flex;flex-direction:column;gap:1.2rem;min-height:0;min-width:0}
 .tile{background:var(--surface);border-radius:1.6rem;overflow:hidden;display:flex;flex-direction:column;min-height:0;box-shadow:var(--shadow);position:relative}
 #tvmap{position:absolute;inset:0;background:var(--map-bg)}
 .leaflet-container{background:var(--map-bg);font-family:inherit}
@@ -189,7 +189,7 @@ html:not(.tv) .leaflet-tile{width:258px!important;height:258px!important;margin:
 .pin .disc .ini{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:600;color:var(--text-2)}
 .pin .cnt{position:absolute;left:3.35rem;top:50%;transform:translateY(-50%);min-width:1.6rem;height:1.6rem;padding:0 .35rem;border-radius:1rem;background:var(--surface);border:.16rem solid var(--text-2);display:flex;align-items:center;justify-content:center;font-size:1.05rem;font-weight:700;color:var(--text);box-shadow:0 .3rem .9rem rgba(0,0,0,.35);white-space:nowrap}
 
-.qr{flex:none;display:flex;flex-direction:row;align-items:stretch;gap:0;padding:0}
+.qr{flex:none;display:flex;flex-direction:row;flex-wrap:wrap;align-items:stretch;gap:0;padding:0;container-type:inline-size}
 .qr .code{width:8.8rem;height:8.8rem;border-radius:.9rem;background:#fff;padding:.55rem;flex:none;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .qr .code img,.qr .code canvas{width:100%!important;height:100%!important;display:block}
 .qr .code .fb{font-size:.9rem;color:#333;text-align:center;line-height:1.2;word-break:break-all;padding:.3rem}
@@ -202,7 +202,8 @@ html:not(.tv) .leaflet-tile{width:258px!important;height:258px!important;margin:
 .feed .f + .f{border-top:.08rem solid var(--sep)}
 .feed .f i{width:.7rem;height:.7rem;border-radius:50%;background:var(--c);display:block;flex:none}
 .feed .f .nm{font-weight:600;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.feed .f .st{color:var(--text-2);white-space:nowrap}
+.feed .f{min-width:0}
+.feed .f .st{color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .feed .f .tm{margin-left:auto;color:var(--text-3);font-variant-numeric:tabular-nums;flex:none}
 
 /* ══════════ TELEMÓVEL — só registar ══════════ */
@@ -521,7 +522,7 @@ html.phone body{
 }
 .qr .qtext{display:flex;flex-direction:column;align-items:center;gap:.2rem;min-width:0}
 .qr .qaction{
-  flex:1;display:flex;align-items:center;justify-content:center;padding:1.3rem;
+  flex:1 1 14rem;min-width:0;display:flex;align-items:center;justify-content:center;padding:1.3rem;
   border-left:1px solid var(--g-brd);
 }
 .qr .reg-btn{
@@ -629,6 +630,12 @@ html.tv #pcal-sheet{zoom:clamp(1,.115vh,2.2)}
   width:8.8rem;height:8.8rem;font-size:1.05rem;padding:1rem;border-radius:.9rem;
 }
 .qr .reg-btn.onboarding .ico{font-size:2.2rem}
+.qr .reg-btn span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* coluna estreita: o QR e os botões empilham */
+@container (max-width:25.4rem){
+  .qr .qscan{flex:1 1 100%}
+  .qr .qaction{border-left:none;border-top:1px solid var(--g-brd)}
+}
 
 #plan-scrim{
   position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
