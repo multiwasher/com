@@ -2287,6 +2287,19 @@ function aplicarDados(onb){
     if(!mp.has(id)) mp.set(id,{dias:new Set(),linhas:[]});
     return mp.get(id);
   };
+  /* Coluna "Visitas inversas": o card fica arquivado (deixa de aparecer)
+     quando já passaram 2 dias sobre o último dia de visita. Os dias dos
+     últimos 2 dias entram mesmo que sejam do mês anterior, para a visita
+     de dia 30/31 não desaparecer logo no dia 1. */
+  const DIAS_ARQUIVO_VISITA = 2;
+  const limiteVisita = (()=>{const d=new Date(hoje+'T00:00:00'); d.setDate(d.getDate()-DIAS_ARQUIVO_VISITA); return iso(d);})();
+  const visitasColuna = new Map();   // id -> {dias, linhas}
+  resolvido.porPessoa.forEach((dias,id)=>dias.forEach((g,dia)=>{
+    if(!g.visita || !(dia.startsWith(mes) || (dia>=limiteVisita && dia<hoje))) return;
+    if(!visitasColuna.has(id)) visitasColuna.set(id,{dias:new Set(),linhas:[]});
+    const v = visitasColuna.get(id); v.dias.add(dia); v.linhas.push({...g.visita, dia});
+  }));
+
   resolvido.porPessoa.forEach((dias,id)=>dias.forEach((g,dia)=>{
     if(!dia.startsWith(mes)) return;
     if(g.local && porTipoMes[g.local]){
@@ -2335,12 +2348,13 @@ function aplicarDados(onb){
     const h  = porTipoMes.home.get(m.id);
     const v  = porTipoMes.viagem.get(m.id);
     const fe = porTipoMes.ferias.get(m.id);
-    const vi = porTipoMes.visitas.get(m.id);
     m.planoFabrica = f  ? resumoPlano(f,'fabrica')  : null;
     m.planoHome    = h  ? resumoPlano(h,'home')     : null;
     m.planoViagem  = v  ? resumoPlano(v,'viagem')   : null;
     m.planoFerias  = fe ? resumoPlano(fe,'ferias')  : null;
-    m.planoVisita  = vi ? resumoPlano(vi,'visitas') : null;
+    const vc = visitasColuna.get(m.id);
+    const pv = vc ? resumoPlano(vc,'visitas') : null;
+    m.planoVisita  = (pv && pv.fim>=limiteVisita) ? pv : null;   // arquivada 2 dias após a visita
 
     // datas, bandeira e relógio do card: só quando o plano do mês cobre hoje
     // e é do mesmo tipo do estado em vigor. Se um check-in corrigiu o dia para
